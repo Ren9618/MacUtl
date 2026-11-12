@@ -117,45 +117,60 @@ pub fn probe(path: &Path) -> Result<ProbeReport, ProbeFailure> {
             .to_string_lossy()
             .into_owned();
 
-        let mut hw_device_ctx: *mut sys::AVBufferRef = ptr::null_mut();
-        let ret = sys::av_hwdevice_ctx_create(
-            &mut hw_device_ctx,
-            sys::AVHWDeviceType::AV_HWDEVICE_TYPE_VAAPI,
-            ptr::null(),
-            ptr::null_mut(),
-            0,
-        );
-        if ret < 0 || hw_device_ctx.is_null() {
-            sys::avformat_close_input(&mut fmt_ctx);
-            return Err(ProbeFailure::DeviceUnavailable);
-        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            let mut hw_device_ctx: *mut sys::AVBufferRef = ptr::null_mut();
+            let ret = sys::av_hwdevice_ctx_create(
+                &mut hw_device_ctx,
+                sys::AVHWDeviceType::AV_HWDEVICE_TYPE_VAAPI,
+                ptr::null(),
+                ptr::null_mut(),
+                0,
+            );
+            if ret < 0 || hw_device_ctx.is_null() {
+                sys::avformat_close_input(&mut fmt_ctx);
+                return Err(ProbeFailure::DeviceUnavailable);
+            }
 
-        let Some(sw_format) = resolve_hw_sw_format(std::mem::transmute::<sys::AVPixelFormat, i32>(
-            stream_sw_format,
-        )) else {
+            let Some(sw_format) = resolve_hw_sw_format(std::mem::transmute::<
+                sys::AVPixelFormat,
+                i32,
+            >(stream_sw_format)) else {
+                sys::av_buffer_unref(&mut hw_device_ctx);
+                sys::avformat_close_input(&mut fmt_ctx);
+                return Err(ProbeFailure::HwFramesCtxUnsupported);
+            };
+            let frames_ref = sys::av_hwframe_ctx_alloc(hw_device_ctx);
+            if frames_ref.is_null() {
+                sys::av_buffer_unref(&mut hw_device_ctx);
+                sys::avformat_close_input(&mut fmt_ctx);
+                return Err(ProbeFailure::HwFramesCtxUnsupported);
+            }
+            let frames_ctx = (*frames_ref).data as *mut sys::AVHWFramesContext;
+            (*frames_ctx).format = sys::AVPixelFormat::AV_PIX_FMT_VAAPI;
+            (*frames_ctx).sw_format = std::mem::transmute::<i32, sys::AVPixelFormat>(sw_format);
+            (*frames_ctx).width = width as i32;
+            (*frames_ctx).height = height as i32;
+            (*frames_ctx).initial_pool_size = 4;
+            let init_ret = sys::av_hwframe_ctx_init(frames_ref);
+            let mut frames_ref_mut = frames_ref;
+            sys::av_buffer_unref(&mut frames_ref_mut);
             sys::av_buffer_unref(&mut hw_device_ctx);
             sys::avformat_close_input(&mut fmt_ctx);
-            return Err(ProbeFailure::HwFramesCtxUnsupported);
-        };
-        let frames_ref = sys::av_hwframe_ctx_alloc(hw_device_ctx);
-        if frames_ref.is_null() {
-            sys::av_buffer_unref(&mut hw_device_ctx);
-            sys::avformat_close_input(&mut fmt_ctx);
-            return Err(ProbeFailure::HwFramesCtxUnsupported);
+            if init_ret != 0 {
+                return Err(ProbeFailure::HwFramesCtxUnsupported);
+            }
         }
-        let frames_ctx = (*frames_ref).data as *mut sys::AVHWFramesContext;
-        (*frames_ctx).format = sys::AVPixelFormat::AV_PIX_FMT_VAAPI;
-        (*frames_ctx).sw_format = std::mem::transmute::<i32, sys::AVPixelFormat>(sw_format);
-        (*frames_ctx).width = width as i32;
-        (*frames_ctx).height = height as i32;
-        (*frames_ctx).initial_pool_size = 4;
-        let init_ret = sys::av_hwframe_ctx_init(frames_ref);
-        let mut frames_ref_mut = frames_ref;
-        sys::av_buffer_unref(&mut frames_ref_mut);
-        sys::av_buffer_unref(&mut hw_device_ctx);
-        sys::avformat_close_input(&mut fmt_ctx);
-        if init_ret != 0 {
-            return Err(ProbeFailure::HwFramesCtxUnsupported);
+        #[cfg(target_os = "macos")]
+        {
+            let sw_ok = resolve_hw_sw_format(std::mem::transmute::<sys::AVPixelFormat, i32>(
+                stream_sw_format,
+            ))
+            .is_some();
+            sys::avformat_close_input(&mut fmt_ctx);
+            if !sw_ok {
+                return Err(ProbeFailure::HwFramesCtxUnsupported);
+            }
         }
 
         let sw_format_i32 = std::mem::transmute::<sys::AVPixelFormat, i32>(stream_sw_format);

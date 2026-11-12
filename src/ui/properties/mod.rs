@@ -119,7 +119,26 @@ impl PropertiesPanel {
                 .id_salt("properties_main_scroll")
                 .auto_shrink([false, false])
                 .show(ui, |ui| {
-                    ui.heading(t!("プロパティ"));
+                    ui.horizontal(|ui| {
+                        ui.heading(t!("プロパティ"));
+                        egui::ComboBox::from_id_salt("properties_object_picker")
+                            .selected_text(format!("Object {id}"))
+                            .show_ui(ui, |ui| {
+                                for obj in &objects {
+                                    let label = format!("Object {} (Layer {})", obj.id, obj.layer);
+                                    if ui
+                                        .selectable_value(
+                                            &mut self.selected,
+                                            Some(obj.id as usize),
+                                            label,
+                                        )
+                                        .clicked()
+                                    {
+                                        world.select_id(obj.id as usize, true);
+                                    }
+                                }
+                            });
+                    });
                     ui.small(format!("Object {id} / frame {}", world.current_frame()));
                     ui.separator();
 

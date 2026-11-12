@@ -48,13 +48,9 @@ pub(super) fn codec_display_name(codec_kind: &str) -> String {
 }
 
 pub(super) fn settings_path() -> PathBuf {
-    std::env::current_exe()
-        .ok()
-        .and_then(|p| {
-            p.parent()
-                .map(|d| d.join("settings").join("system-settings.npb"))
-        })
-        .unwrap_or_else(|| PathBuf::from("settings/system-settings.npb"))
+    crate::project::runtime_data_dir()
+        .join("settings")
+        .join("system-settings.npb")
 }
 
 pub(super) fn save_to_disk(s: &SystemSettingsResource) -> std::io::Result<()> {

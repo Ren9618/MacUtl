@@ -503,11 +503,81 @@ pub fn text_section(ui: &mut egui::Ui, world: &mut EcsWorld, id: usize) {
             ParamKind::Text if schema.key == "text" => {
                 ui.label(effect_param_label(schema.label));
                 let width = ui.available_width();
-                if ui
-                    .add_sized([width, 80.0], TextArea::new(&mut content.text).rows(4))
-                    .changed()
+                #[cfg(not(target_os = "macos"))]
                 {
-                    world.set_text(id, content.text.clone(), content.font_size);
+                    if ui
+                        .add_sized([width, 80.0], TextArea::new(&mut content.text).rows(4))
+                        .changed()
+                    {
+                        world.set_text(id, content.text.clone(), content.font_size);
+                    }
+                }
+                #[cfg(target_os = "macos")]
+                {
+                    let ime_state_id = ui.id().with((id, "text_ime_composition_state"));
+                    let mut preedit_text: String =
+                        ui.data_mut(|d| d.get_temp(ime_state_id).unwrap_or_default());
+                    let mut commit_text: Option<String> = None;
+
+                    ui.input(|i| {
+                        for event in &i.events {
+                            match event {
+                                egui::Event::Ime(egui::ImeEvent::Preedit { text, .. }) => {
+                                    preedit_text = text.clone();
+                                }
+                                egui::Event::Ime(egui::ImeEvent::Commit(text)) => {
+                                    commit_text = Some(text.clone());
+                                    preedit_text.clear();
+                                }
+                                _ => {}
+                            }
+                        }
+                    });
+
+                    if let Some(commit) = commit_text {
+                        if !commit.is_empty() {
+                            content.text.push_str(&commit);
+                            world.set_text(id, content.text.clone(), content.font_size);
+                            ui.ctx().request_repaint();
+                        }
+                    }
+
+                    ui.data_mut(|d| d.insert_temp(ime_state_id, preedit_text.clone()));
+
+                    let resp = ui.add_sized(
+                        [width, 80.0],
+                        TextArea::new(&mut content.text)
+                            .id_salt((id, "text_area_input"))
+                            .rows(4),
+                    );
+
+                    if resp.changed() {
+                        world.set_text(id, content.text.clone(), content.font_size);
+                    }
+
+                    if !preedit_text.is_empty() {
+                        ui.horizontal(|ui| {
+                            ui.colored_label(
+                                egui::Color32::from_rgb(0xff, 0xa5, 0x00),
+                                format!("【{}】", t!("変換中")),
+                            );
+                            ui.colored_label(
+                                egui::Color32::from_rgb(0x8a, 0xab, 0xff),
+                                &preedit_text,
+                            );
+                        });
+                    }
+
+                    if resp.has_focus() {
+                        ui.output_mut(|o| {
+                            o.ime = Some(egui::output::IMEOutput {
+                                purpose: egui::IMEPurpose::Normal,
+                                rect: resp.rect,
+                                cursor_rect: resp.rect,
+                                should_interrupt_composition: false,
+                            });
+                        });
+                    }
                 }
             }
             ParamKind::Text => {}

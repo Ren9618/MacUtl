@@ -573,6 +573,16 @@ impl MediaCache {
             }
             PathEntry::Image(image) => {
                 if image.texture.is_none() {
+                    // macOSの画像デコーダはdylibとして読み込まれ、wgpu/parking_lotを
+                    // 別コピーで静的リンクする。共有queueの`write_texture`が動画側の
+                    // `submit`と同時に走ると、parking_lotの待機解除が別コピー間で
+                    // 成立せず停止するため、GPU操作を共有ロックで直列化する。
+                    #[cfg(target_os = "macos")]
+                    let submit_lock = neo_media_ffmpeg::shared_wgpu_submit_lock();
+                    #[cfg(target_os = "macos")]
+                    let _submit_guard = submit_lock
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
                     image.texture = Some(image.decoder.texture(device, queue));
                 }
                 Ok(image.texture.clone().unwrap())

@@ -237,6 +237,8 @@ fn decode_task(
         frame_indices: Vec::new(),
     };
 
+    let seek_pts = ctx.index.pts_at(key_index);
+    let mut waiting_for_keyframe = need_seek;
     let mut target_dispatched = false;
     let mut decode_budget = (gop_end - key_index + 10).max(500);
     let mut eof = false;
@@ -253,6 +255,31 @@ fn decode_task(
                     if slot.eof {
                         eof = true;
                     } else {
+                        if waiting_for_keyframe {
+                            let is_key =
+                                unsafe { (*slot.packet).flags & sys::AV_PKT_FLAG_KEY as i32 != 0 };
+                            let pkt_pts = unsafe { (*slot.packet).pts };
+                            if !is_key || (pkt_pts != sys::AV_NOPTS_VALUE && pkt_pts < seek_pts) {
+                                unsafe {
+                                    eprintln!(
+                                        "[neoutl-video-decoder][diag] stale pre-seek packet破棄: pts={pkt_pts} flags={}",
+                                        (*slot.packet).flags
+                                    );
+                                    sys::av_packet_free(&mut slot.packet);
+                                }
+                                continue;
+                            }
+                            waiting_for_keyframe = false;
+                        }
+                        unsafe {
+                            eprintln!(
+                                "[neoutl-video-decoder][diag] send_packet: pts={} dts={} flags={} size={}",
+                                (*slot.packet).pts,
+                                (*slot.packet).dts,
+                                (*slot.packet).flags,
+                                (*slot.packet).size
+                            );
+                        }
                         send_ret = unsafe { sys::avcodec_send_packet(ctx.dec_ctx, slot.packet) };
                         unsafe { sys::av_packet_free(&mut slot.packet) };
                     }

@@ -626,10 +626,9 @@ impl KeymapResource {
 }
 
 fn keymap_path() -> PathBuf {
-    std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|d| d.join("settings").join("keymap.npb")))
-        .unwrap_or_else(|| PathBuf::from("settings/keymap.npb"))
+    crate::project::runtime_data_dir()
+        .join("settings")
+        .join("keymap.npb")
 }
 
 pub fn save_to_disk(k: &KeymapResource) -> std::io::Result<()> {

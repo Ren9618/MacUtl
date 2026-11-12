@@ -3116,6 +3116,7 @@ dependencies = [
  "neoutl-color",
  "neoutl-media-api",
  "neoutl-object-shader-build",
+ "pollster 1.0.1",
  "wgpu",
 ]
 

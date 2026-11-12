@@ -183,11 +183,12 @@ impl VideoEncoder {
 
             let mut output_opened = false;
             if (*(*fmt_ctx).oformat).flags & sys::AVFMT_NOFILE == 0 {
-                if sys::avio_open(&mut (*fmt_ctx).pb, out_cpath.as_ptr(), sys::AVIO_FLAG_WRITE) < 0
-                {
+                let avio_res =
+                    sys::avio_open(&mut (*fmt_ctx).pb, out_cpath.as_ptr(), sys::AVIO_FLAG_WRITE);
+                if avio_res < 0 {
                     sys::avcodec_free_context(&mut { enc_ctx });
                     sys::avformat_free_context(fmt_ctx);
-                    return Err("avio_open失敗".to_owned());
+                    return Err(format!("avio_open失敗(code={avio_res}, path={path_str:?})"));
                 }
                 output_opened = true;
             }

@@ -65,6 +65,17 @@ pub fn shared_wgpu_submit_lock() -> Arc<Mutex<()>> {
         .clone()
 }
 
+/// 共有wgpuキューを操作する区間を直列化する。
+///
+/// macOSでは画像デコーダがdylib内にwgpu/parking_lotの別コピーを静的リンクする。
+/// その`write_texture`がホスト側の`submit`/`map_async`と`pending_writes`上で
+/// 競合すると、parking_lotの待機解除がコピー間で成立せず停止するため、
+/// キューの書き込み・送信・map操作を同じロックで囲む。
+pub fn lock_shared_wgpu_submit() -> std::sync::MutexGuard<'static, ()> {
+    let lock = SHARED_QUEUE_SUBMIT_LOCK.get_or_init(|| Arc::new(Mutex::new(())));
+    lock.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 pub fn set_shared_wgpu_device(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) {
     let budget_provider: Option<Arc<neo_media_cache::VramBudgetProvider>> = None;
     let ram_budget_provider: Option<Arc<neo_media_cache::RamBudgetProvider>> = None;

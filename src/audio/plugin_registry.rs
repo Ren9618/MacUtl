@@ -104,11 +104,5 @@ pub fn find_by_id_or_path(id_or_path: &str) -> Option<PluginCatalogEntry> {
 }
 
 pub fn default_plugins_dir() -> PathBuf {
-    let Some(exe_dir) = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(Path::to_path_buf))
-    else {
-        return PathBuf::from("audio-plugins");
-    };
-    exe_dir.join("audio-plugins")
+    crate::project::runtime_data_dir().join("audio-plugins")
 }

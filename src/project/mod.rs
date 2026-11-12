@@ -79,11 +79,34 @@ pub fn copy_project(dir: &Path) -> std::io::Result<ProjectMeta> {
     load_project(&target).ok_or_else(|| std::io::Error::other("プロジェクトの複製に失敗しました"))
 }
 
-pub fn projects_dir() -> PathBuf {
-    std::env::current_exe()
+/// 実行時に書き込むデータ（プロジェクト・設定）のルート。
+///
+/// macOS の `.app` バンドル内では実行ファイル隣に書き込むとコード署名が
+/// 破壊されるため、`~/Library/Application Support/NeoUtl` を使う。
+/// 素のバイナリ（`Contents/MacOS` 配下でない実行ファイル）は従来どおり
+/// 実行ファイル隣を使い、Phase 2/3 の挙動を維持する。
+pub(crate) fn runtime_data_dir() -> PathBuf {
+    let exe_dir = std::env::current_exe()
         .ok()
-        .and_then(|p| p.parent().map(|d| d.join("projects")))
-        .unwrap_or_else(|| PathBuf::from("projects"))
+        .and_then(|p| p.parent().map(Path::to_path_buf))
+        .unwrap_or_else(|| PathBuf::from("."));
+
+    #[cfg(target_os = "macos")]
+    {
+        let in_app_bundle = exe_dir.ends_with("Contents/MacOS");
+        if in_app_bundle && let Some(home) = std::env::var_os("HOME") {
+            return PathBuf::from(home)
+                .join("Library")
+                .join("Application Support")
+                .join("NeoUtl");
+        }
+    }
+
+    exe_dir
+}
+
+pub fn projects_dir() -> PathBuf {
+    runtime_data_dir().join("projects")
 }
 
 fn meta_path(dir: &Path) -> PathBuf {
@@ -334,10 +357,7 @@ pub fn runtime_marker_path() -> PathBuf {
 }
 
 fn settings_runtime_dir() -> PathBuf {
-    std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|d| d.join("settings")))
-        .unwrap_or_else(|| PathBuf::from("settings"))
+    runtime_data_dir().join("settings")
 }
 
 pub fn begin_runtime_session() -> std::io::Result<bool> {

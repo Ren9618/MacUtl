@@ -113,9 +113,13 @@ impl StagingPool {
         {
             let slice = buffer.slice(0..total_bytes);
             let (tx, rx) = std::sync::mpsc::channel();
-            slice.map_async(wgpu::MapMode::Write, move |result| {
-                let _ = tx.send(result);
-            });
+            {
+                #[cfg(target_os = "macos")]
+                let _gpu_lock = crate::decoder::lock_shared_wgpu_submit();
+                slice.map_async(wgpu::MapMode::Write, move |result| {
+                    let _ = tx.send(result);
+                });
+            }
             self.device
                 .poll(wgpu::PollType::wait_indefinitely())
                 .expect("device poll失敗");
@@ -162,7 +166,11 @@ impl StagingPool {
                 depth_or_array_layers: 1,
             },
         );
-        let submission_index = queue.submit(Some(encoder.finish()));
+        let submission_index = {
+            let lock = crate::decoder::shared_wgpu_submit_lock();
+            let _guard = lock.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+            queue.submit(Some(encoder.finish()))
+        };
 
         let pool = self.clone();
         queue.on_submitted_work_done(move || pool.checkin(class_size, buffer));

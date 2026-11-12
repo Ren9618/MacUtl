@@ -237,10 +237,23 @@ pub fn init_shared_gpu() -> Result<SharedGpu, Box<dyn std::error::Error>> {
         }))
         .map_err(|_| "adapter取得失敗")?;
 
-        let mut limits = wgpu::Limits::default();
-        limits.max_storage_buffers_per_shader_stage = 1;
+        #[cfg(not(target_os = "macos"))]
+        let limits = {
+            let mut limits = wgpu::Limits::default();
+            limits.max_storage_buffers_per_shader_stage = 1;
+            limits
+        };
         #[cfg(target_os = "macos")]
-        let required_features = wgpu::Features::TEXTURE_FORMAT_NV12;
+        let limits = wgpu::Limits::default();
+        #[cfg(target_os = "macos")]
+        let required_features = if adapter
+            .features()
+            .contains(wgpu::Features::TEXTURE_FORMAT_NV12)
+        {
+            wgpu::Features::TEXTURE_FORMAT_NV12
+        } else {
+            wgpu::Features::empty()
+        };
         #[cfg(target_os = "windows")]
         let required_features = wgpu::Features::empty();
 
@@ -254,11 +267,16 @@ pub fn init_shared_gpu() -> Result<SharedGpu, Box<dyn std::error::Error>> {
 
         crate::renderer::pipeline::install_device_lost_watcher(&device);
 
+        let device = Arc::new(device);
+        let queue = Arc::new(queue);
+        #[cfg(target_os = "macos")]
+        neo_media_ffmpeg::set_shared_wgpu_device(device.clone(), queue.clone());
+
         let gpu = SharedGpu {
             instance,
             adapter,
-            device: Arc::new(device),
-            queue: Arc::new(queue),
+            device,
+            queue,
         };
         gpu.broadcast_accelerator();
         Ok(gpu)

@@ -17,6 +17,7 @@ pub(crate) struct HwPixFmtBox {
     pub(crate) pix_fmt: i32,
 }
 
+#[allow(dead_code)]
 pub(crate) fn resolve_hw_sw_format(stream_sw_format: i32) -> Option<i32> {
     if stream_sw_format == av_pix_fmt_nv12()
         || stream_sw_format == av_pix_fmt_yuv420p()
@@ -276,6 +277,7 @@ pub(crate) fn hw_device_type_priority_for(codec_kind: Option<&str>) -> Vec<Strin
     hw_device_type_priority_store().lock().unwrap().clone()
 }
 
+#[allow(dead_code)]
 pub(crate) fn available_hw_device_types(priority: &[String]) -> Vec<sys::AVHWDeviceType> {
     let mut found: Vec<sys::AVHWDeviceType> = Vec::new();
     unsafe {
@@ -302,6 +304,7 @@ pub(crate) fn available_hw_device_types(priority: &[String]) -> Vec<sys::AVHWDev
     ordered
 }
 
+#[allow(dead_code)]
 pub(crate) fn first_drm_render_node() -> Option<CString> {
     let dir = std::fs::read_dir("/dev/dri").ok()?;
     let mut nodes: Vec<String> = dir
@@ -314,6 +317,7 @@ pub(crate) fn first_drm_render_node() -> Option<CString> {
     CString::new(format!("/dev/dri/{name}")).ok()
 }
 
+#[allow(dead_code)]
 unsafe fn config_supports_sw_format(
     hw_device_ctx: *mut sys::AVBufferRef,
     config: *const sys::AVCodecHWConfig,
@@ -373,6 +377,99 @@ pub(crate) unsafe fn try_init_hw_device(
     excluded_device_types: &HashSet<i32>,
 ) -> Option<(*mut sys::AVBufferRef, i32, i32)> {
     let _ = gpu_device;
+    #[cfg(target_os = "macos")]
+    unsafe {
+        let vt_device_type = sys::AVHWDeviceType::AV_HWDEVICE_TYPE_VIDEOTOOLBOX;
+        let vt_device_type_i32 = std::mem::transmute::<sys::AVHWDeviceType, i32>(vt_device_type);
+        if excluded_device_types.contains(&vt_device_type_i32) {
+            eprintln!("[neoutl-video-decoder][diag] VideoToolbox除外登録済みのためスキップ");
+            return None;
+        }
+
+        let mut i = 0;
+        let mut found_config: Option<*const sys::AVCodecHWConfig> = None;
+        loop {
+            let config = sys::avcodec_get_hw_config(codec, i);
+            if config.is_null() {
+                break;
+            }
+            let methods = (*config).methods;
+            let matches_method =
+                (methods & sys::AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX as i32) != 0;
+            if matches_method && (*config).device_type == vt_device_type {
+                found_config = Some(config);
+                break;
+            }
+            i += 1;
+        }
+
+        let Some(config) = found_config else {
+            eprintln!(
+                "[neoutl-video-decoder][diag] VideoToolbox HW config不在 codec={:?}",
+                (*codec).id
+            );
+            return None;
+        };
+
+        let mut hw_device_ctx: *mut sys::AVBufferRef = ptr::null_mut();
+        let ret = sys::av_hwdevice_ctx_create(
+            &mut hw_device_ctx,
+            vt_device_type,
+            ptr::null(),
+            ptr::null_mut(),
+            0,
+        );
+        eprintln!("[neoutl-video-decoder][diag] av_hwdevice_ctx_create (VideoToolbox) ret={ret}");
+        if ret == 0 {
+            let mut constraints =
+                sys::av_hwdevice_get_hwframe_constraints(hw_device_ctx, ptr::null());
+            let format_supported = if constraints.is_null() {
+                true
+            } else {
+                let valid_sw_formats = (*constraints).valid_sw_formats;
+                let ok = if valid_sw_formats.is_null() {
+                    true
+                } else {
+                    let mut p = valid_sw_formats;
+                    let mut found = false;
+                    while std::mem::transmute::<sys::AVPixelFormat, i32>(*p) != av_pix_fmt_none() {
+                        let stream_sw_i32 =
+                            std::mem::transmute::<sys::AVPixelFormat, i32>(stream_sw_format);
+                        let p_i32 = std::mem::transmute::<sys::AVPixelFormat, i32>(*p);
+                        if p_i32 == stream_sw_i32
+                            || p_i32 == av_pix_fmt_nv12()
+                            || p_i32 == av_pix_fmt_yuv420p()
+                        {
+                            found = true;
+                            break;
+                        }
+                        p = p.add(1);
+                    }
+                    found
+                };
+                sys::av_hwframe_constraints_free(&mut constraints);
+                ok
+            };
+
+            if format_supported {
+                eprintln!(
+                    "[neoutl-video-decoder][diag] VideoToolbox HW初期化成功 pix_fmt={:?}",
+                    (*config).pix_fmt
+                );
+                return Some((
+                    hw_device_ctx,
+                    std::mem::transmute::<sys::AVPixelFormat, i32>((*config).pix_fmt),
+                    vt_device_type_i32,
+                ));
+            }
+            sys::av_buffer_unref(&mut hw_device_ctx);
+        }
+        eprintln!(
+            "[neoutl-video-decoder][diag] VideoToolbox初期化失敗、SWデコードへフォールバック"
+        );
+        None
+    }
+    #[cfg(not(target_os = "macos"))]
     unsafe {
         let priority = hw_device_type_priority_for(codec_kind_of((*codec).id));
         let device_types = available_hw_device_types(&priority);

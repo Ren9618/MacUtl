@@ -202,7 +202,7 @@ fn prepend_path(cmd: &mut Command, dir: PathBuf) {
     cmd.env("PATH", joined_path);
 }
 
-const PLUGIN_HOST_VERSION: &str = "0.0.7";
+const PLUGIN_HOST_VERSION: &str = "0.0.8";
 
 fn plugin_host_install_root(workspace_root: &Path) -> PathBuf {
     workspace_root
@@ -338,7 +338,7 @@ fn main() {
         match args[i].as_str() {
             "--release" => release = true,
             "--offline" => offline = true,
-            "build" | "run" | "lint" => task = args[i].clone(),
+            "build" | "run" | "lint" | "package" => task = args[i].clone(),
             "--target" => {
                 i += 1;
                 target = args.get(i).cloned();
@@ -390,6 +390,27 @@ fn main() {
     fs::create_dir_all(target_dir(&root, profile, target).join("easings"))
         .expect("easings配置先ディレクトリ作成失敗");
     stage_scripts(&root, profile, target);
+
+    if task == "package" {
+        #[cfg(target_os = "macos")]
+        {
+            let script = root.join("scripts").join("package_macos.py");
+            let mut cmd = Command::new("python3");
+            cmd.arg(&script).current_dir(&root);
+            if profile == "debug" {
+                cmd.arg("--debug");
+            }
+            let status = cmd.status().expect("package_macos.py 起動失敗");
+            if !status.success() {
+                std::process::exit(status.code().unwrap_or(1));
+            }
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            eprintln!("[xtask] パッケージングは現在macOSのみ対応しています");
+        }
+        return;
+    }
 
     if task != "run" {
         return;

@@ -286,4 +286,5 @@ pub(crate) fn seek_to_keyframe(ctx: &mut OpenContext, keyframe_index: i64) {
         sys::avcodec_flush_buffers(ctx.dec_ctx);
         resend_av1_sequence_header_if_needed(ctx.dec_ctx);
     }
+    ctx.packet_queue.flush();
 }

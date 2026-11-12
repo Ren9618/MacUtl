@@ -6,8 +6,13 @@ pub fn default_binary_path() -> PathBuf {
     } else {
         "maolan-plugin-host"
     };
-    std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|d| d.join(exe_name)))
-        .unwrap_or_else(|| PathBuf::from(exe_name))
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let candidate = parent.join(exe_name);
+            if candidate.exists() {
+                return candidate;
+            }
+        }
+    }
+    PathBuf::from(exe_name)
 }

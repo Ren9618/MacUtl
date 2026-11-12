@@ -4,6 +4,13 @@ pub(super) fn load_font_bytes(family: &str, bold: bool, italic: bool) -> Option<
     use font_kit::family_name::FamilyName;
     use font_kit::properties::{Properties, Style, Weight};
     use font_kit::source::SystemSource;
+    #[cfg(target_os = "macos")]
+    let requested = if family.is_empty() {
+        FamilyName::Title("Hiragino Sans".to_owned())
+    } else {
+        FamilyName::Title(family.to_owned())
+    };
+    #[cfg(not(target_os = "macos"))]
     let requested = if family.is_empty() {
         FamilyName::SansSerif
     } else {
@@ -13,6 +20,18 @@ pub(super) fn load_font_bytes(family: &str, bold: bool, italic: bool) -> Option<
     properties.weight(if bold { Weight::BOLD } else { Weight::NORMAL });
     properties.style(if italic { Style::Italic } else { Style::Normal });
     let source = SystemSource::new();
+    #[cfg(target_os = "macos")]
+    let handle = source
+        .select_best_match(
+            &[
+                requested,
+                FamilyName::Title("Hiragino Sans".to_owned()),
+                FamilyName::SansSerif,
+            ],
+            &properties,
+        )
+        .ok()?;
+    #[cfg(not(target_os = "macos"))]
     let handle = source
         .select_best_match(&[requested, FamilyName::SansSerif], &properties)
         .ok()?;
@@ -57,6 +76,18 @@ impl RenderEngine {
                 return Some(font);
             }
             fallback = Some(font);
+        }
+        #[cfg(target_os = "macos")]
+        {
+            if let Some(font) = self.resolve_font("Hiragino Sans", bold, italic) {
+                let covers_all = text.chars().all(|c| c == '\n' || font.glyph_id(c).0 != 0);
+                if covers_all {
+                    return Some(font);
+                }
+                if fallback.is_none() {
+                    fallback = Some(font);
+                }
+            }
         }
         fallback.or_else(|| self.resolve_font("", bold, italic))
     }

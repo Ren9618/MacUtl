@@ -287,7 +287,7 @@ impl Filter for ShaderEffectFilter {
             rpass.set_bind_group(0, &bind_group, &[]);
             rpass.draw(0..3, 0..1);
         }
-        self.queue.submit(std::iter::once(encoder.finish()));
+        crate::infra::gpu_shared::locked_submit(&self.queue, std::iter::once(encoder.finish()));
 
         let mut out = Frame::with_image(frame.position, FrameImage::Rgba(dst_texture));
         out.properties = frame.properties;

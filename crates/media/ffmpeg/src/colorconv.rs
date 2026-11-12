@@ -270,7 +270,11 @@ pub fn composite_p0xx_to_rgba(
         tap_count_v: 1,
         _pad: [0, 0],
     };
-    queue.write_buffer(&res.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
+    {
+        #[cfg(target_os = "macos")]
+        let _gpu_lock = crate::decoder::lock_shared_wgpu_submit();
+        queue.write_buffer(&res.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
+    }
 
     let dst_texture = cache
         .acquire_for_write_as(
@@ -327,7 +331,11 @@ pub fn composite_p0xx_to_rgba(
         pass.set_bind_group(0, &bind_group, &[]);
         pass.dispatch_workgroups(width.div_ceil(8), height.div_ceil(8), 1);
     }
-    let submission_index = queue.submit(Some(encoder.finish()));
+    let submission_index = {
+        let lock = crate::decoder::shared_wgpu_submit_lock();
+        let _guard = lock.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        queue.submit(Some(encoder.finish()))
+    };
     cache.mark_ready(
         PixelFormat::Rgba8,
         width,

@@ -2,13 +2,9 @@ use crate::ecs::resources::AudioPluginSettingsResource;
 use std::path::PathBuf;
 
 fn settings_path() -> PathBuf {
-    std::env::current_exe()
-        .ok()
-        .and_then(|p| {
-            p.parent()
-                .map(|d| d.join("settings").join("audio-plugin-settings.npb"))
-        })
-        .unwrap_or_else(|| PathBuf::from("settings/audio-plugin-settings.npb"))
+    crate::project::runtime_data_dir()
+        .join("settings")
+        .join("audio-plugin-settings.npb")
 }
 
 pub fn save_to_disk(s: &AudioPluginSettingsResource) -> std::io::Result<()> {

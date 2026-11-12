@@ -1,3 +1,5 @@
+#![cfg_attr(target_os = "macos", allow(dead_code, unused_variables))]
+
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -101,21 +103,31 @@ fn is_newer(remote_version: &str) -> Result<bool, String> {
 }
 
 pub fn spawn_check(state: Arc<Mutex<UpdateStatus>>) {
-    *state.lock().unwrap() = UpdateStatus::Checking;
-    std::thread::spawn(move || {
-        let result = fetch_latest_release().and_then(|info| {
-            let newer = is_newer(&info.version)?;
-            Ok(if newer {
-                UpdateStatus::Available(info)
-            } else {
-                UpdateStatus::UpToDate
-            })
+    #[cfg(target_os = "macos")]
+    {
+        // macOS の .app バンドル運用では、バイナリの自己置換（self-replace）がコード署名（_CodeSignature）を
+        // 破壊し、プラグイン/依存 dylib との整合性も失われるため、自動更新チェックを無効化（常に UpToDate）とする。
+        *state.lock().unwrap() = UpdateStatus::UpToDate;
+        return;
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        *state.lock().unwrap() = UpdateStatus::Checking;
+        std::thread::spawn(move || {
+            let result = fetch_latest_release().and_then(|info| {
+                let newer = is_newer(&info.version)?;
+                Ok(if newer {
+                    UpdateStatus::Available(info)
+                } else {
+                    UpdateStatus::UpToDate
+                })
+            });
+            *state.lock().unwrap() = match result {
+                Ok(status) => status,
+                Err(err) => UpdateStatus::Error(err),
+            };
         });
-        *state.lock().unwrap() = match result {
-            Ok(status) => status,
-            Err(err) => UpdateStatus::Error(err),
-        };
-    });
+    }
 }
 
 fn extract_zip_archive(
@@ -216,16 +228,26 @@ fn apply_update(info: &UpdateInfo, state: &Arc<Mutex<UpdateStatus>>) -> Result<(
 }
 
 pub fn spawn_apply(state: Arc<Mutex<UpdateStatus>>, info: UpdateInfo) {
-    std::thread::spawn(move || {
-        let result = apply_update(&info, &state);
-        if let Err(err) = &result {
-            crate::infra::crash_report::capture_message(&format!(
-                "[NeoUtl][update] 自己更新失敗: {err}"
-            ));
-        }
-        *state.lock().unwrap() = match result {
-            Ok(()) => UpdateStatus::Installed,
-            Err(err) => UpdateStatus::Error(err),
-        };
-    });
+    #[cfg(target_os = "macos")]
+    {
+        let _ = info;
+        *state.lock().unwrap() = UpdateStatus::Error(
+            t!("macOSではアプリケーションバンドルの自動自己置換は無効化されています").to_string(),
+        );
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        std::thread::spawn(move || {
+            let result = apply_update(&info, &state);
+            if let Err(err) = &result {
+                crate::infra::crash_report::capture_message(&format!(
+                    "[NeoUtl][update] 自己更新失敗: {err}"
+                ));
+            }
+            *state.lock().unwrap() = match result {
+                Ok(()) => UpdateStatus::Installed,
+                Err(err) => UpdateStatus::Error(err),
+            };
+        });
+    }
 }

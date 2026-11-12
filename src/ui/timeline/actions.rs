@@ -94,7 +94,7 @@ impl TimelineWindow {
 
     pub(super) fn select_object(
         &mut self,
-        _state: &SharedAppState,
+        state: &SharedAppState,
         _props_weak: &(),
         id: i32,
         additive: bool,
@@ -103,6 +103,9 @@ impl TimelineWindow {
             self.selected_ids.clear();
         }
         self.selected_ids.insert(id);
+        let world_holder = app_state::active_world(state);
+        let mut world = world_holder.lock().unwrap();
+        world.select_id(id as usize, !additive);
     }
 
     pub(super) fn selection_target_ids(&self, hit_id: i32) -> Vec<usize> {

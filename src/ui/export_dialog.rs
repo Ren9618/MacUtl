@@ -149,6 +149,14 @@ impl ExportDialog {
         } else {
             picker.add_filter("MP4", &["mp4"])
         };
+        #[cfg(target_os = "macos")]
+        {
+            picker = picker.set_file_name(if self.mkv_container {
+                "export.mkv"
+            } else {
+                "export.mp4"
+            });
+        }
         if let Some(path) = picker.save_file() {
             self.output_path = path.to_string_lossy().into_owned();
         }
@@ -251,23 +259,29 @@ impl ExportDialog {
             ui.add(TextInput::new(&mut self.preset_name));
 
             ui.label(t!("出力ファイル"));
-            tui(ui, ui.id().with("output_path_row"))
-                .style(row_style(8.0))
-                .show(|tui| {
-                    tui.ui(|ui| {
-                        let display = if self.output_path.is_empty() {
-                            t!("未選択")
-                        } else {
-                            self.output_path.clone()
-                        };
-                        ui.label(display);
-                    });
-                    tui.ui(|ui| {
-                        ui.add_enabled(!queue_running, Button::new(tr("選択...")))
-                            .clicked()
-                            .then(|| self.pick_output_path());
-                    });
-                });
+            ui.horizontal(|ui| {
+                #[cfg(target_os = "macos")]
+                {
+                    let hint = t!("出力ファイルパス");
+                    ui.add(
+                        TextInput::new(&mut self.output_path)
+                            .hint(hint.as_str())
+                            .desired_width(ui.available_width() - 80.0),
+                    );
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let display = if self.output_path.is_empty() {
+                        t!("未選択")
+                    } else {
+                        self.output_path.clone()
+                    };
+                    ui.label(display);
+                }
+                ui.add_enabled(!queue_running, Button::new(tr("選択...")))
+                    .clicked()
+                    .then(|| self.pick_output_path());
+            });
 
             ui.label(t!("映像コーデック"));
             {

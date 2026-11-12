@@ -186,6 +186,10 @@ fn run_scan_process_ex(
     for arg in extra_args {
         cmd.arg(arg);
     }
+    #[cfg(target_os = "macos")]
+    if std::env::var("VST3_PATH").is_err() {
+        cmd.env("VST3_PATH", "/Library/Audio/Plug-Ins/VST3");
+    }
     cmd.stdin(Stdio::null()).stdout(Stdio::null());
     cmd.stderr(if capture_stderr {
         Stdio::piped()

@@ -31,6 +31,11 @@ pub const SYSTEM_DEFAULT_MAX_GROUP_CHAIN_DEPTH: i32 = 32;
 pub const SYSTEM_DEFAULT_HW_DECODE_EXTRA_FRAMES: i32 = 16;
 pub const HW_DECODE_EXTRA_FRAMES_MIN: i32 = 4;
 pub const HW_DECODE_EXTRA_FRAMES_MAX: i32 = 64;
+/// Upstream NeoUtl crash-reporting endpoint.
+///
+/// MacUtl's macOS build intentionally does not compile this endpoint in; the
+/// macOS crash reporter is disabled in `infra::crash_report::init`.
+#[cfg(not(target_os = "macos"))]
 pub const SENTRY_DSN: &str = "https://a5c5db74531842109880e0e97e054915@app.glitchtip.com/26533";
 pub const SYSTEM_DEFAULT_HOT_RELOAD_ENABLED: bool = cfg!(debug_assertions);
 
