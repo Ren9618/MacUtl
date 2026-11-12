@@ -1,0 +1,33 @@
+## 2. Rust dependencies
+
+This section is generated from the Cargo dependency graph for the
+`aarch64-apple-darwin` release build using `cargo about` 0.9.3.
+It lists every Rust crate that is compiled into MacUtl or its bundled
+plugins, together with the license text that applies.
+
+Dual-licensed crates are used under the most permissive option. In
+particular, `self_cell` is used under Apache-2.0 (not GPL-2.0-only) and
+`r-efi` is used under MIT (not LGPL-2.1-or-later).
+
+### 2.1 License overview
+
+{{#each overview}}
+- **{{name}}** — {{count}} package(s)
+{{/each}}
+
+### 2.2 Licenses and packages
+
+{{#each licenses}}
+#### {{name}}
+
+Used by:
+
+{{#each used_by}}
+- {{crate.name}} {{crate.version}}{{#if crate.repository}} — {{crate.repository}}{{/if}}
+{{/each}}
+
+```text
+{{text}}
+```
+
+{{/each}}

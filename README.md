@@ -1,345 +1,149 @@
-> [!IMPORTANT]
-> # 大学受験の為、開発を休止しています。2027年度から開発を再開する予定です。
+# MacUtl
 
-# NeoUtl: Ever Optimize &mdash; Until Triumphing Liberty.
+**NeoUtl をベースに開発した、macOS ネイティブの AviUtl 風動画編集ソフトです。本家 AviUtl および NeoUtl の公式版・移植版ではありません（非公式フォーク）。**
 
-[公式サイト](https://neoutl.taisho-guy.org) / [Codeberg](https://codeberg.org/TeamNeoUtl/NeoUtl) / [Zulip](https://taisho-guy.zulipchat.com/join/lz2ljlwmnz2xridgihuprspg/) / [Wiki](https://codeberg.org/TeamNeoUtl/NeoUtl/wiki/Home) / [AviQtl](https://codeberg.org/TeamNeoUtl/NeoUtl/src/branch/aviqtl)
+- ベース: [NeoUtl](https://codeberg.org/taisho-guy/NeoUtl) v0.8.11（プレアルファ、コミット `0ead393`）
+- 対応: Apple Silicon（arm64）のみ / macOS 27.0 以降
+- ライセンス: AGPL-3.0-or-later
+- 配布: [GitHub Releases](https://github.com/Ren9618/MacUtl/releases)
 
-## NeoUtlとは
+![MacUtl のメイン画面](docs/screenshots/macutl-main.png)
 
-AviUtl ExEdit0ライクな動画編集ソフトウェアです。LinuxやWindowsで動作します。macOSも将来的にサポートする予定です。現在はプレアルファです。
+## MacUtl とは
 
-<img src="https://codeberg.org/TeamNeoUtl/neoutl-branding/raw/branch/main/gallery/screenshot.webp"/>
+MacUtl は、AviUtl ExEdit 風のタイムライン編集・プレビュー・書き出しを macOS 上で行えるようにした非公式フォークです。NeoUtl の Rust / wgpu 実装をベースに、macOS 向けの VideoToolbox ハードウェアデコード、日本語 IME 入力、`.app` パッケージング、Gatekeeper を考慮した配布形態を追加しています。
 
-## コミュニティに参加しましょう！
-[Zulip](https://zulip.com)は、効率的なコミュニケーションのために設計された、組織的なチームチャットアプリです。[こちら](https://taisho-guy.zulipchat.com/join/lz2ljlwmnz2xridgihuprspg/)から招待を受け取り、NeoUtlの開発者やユーザーと繋がることが出来ます。デスクトップやモバイル向けに[Zulipアプリ](https://zulip.com/apps/)も提供されております。
+本家 AviUtl のプラグイン（`.auf` / `.aui` / `.auo` 等）とのバイナリ互換はありません。NeoUtl のオブジェクト／エフェクトプラグイン ABI を使用します。
 
-## ロードマップ
+### 現在できること（Phase 4.5 時点で実測済み）
 
-[TODO.md](https://codeberg.org/taisho-guy/NeoUtl/src/branch/main/TODO.md)をご確認下さい。
+- 起動、プロジェクト作成・保存・読み込み
+- タイムライン編集、Undo / Redo
+- プレビュー（VideoToolbox HW デコード、失敗時はソフトウェアにフォールバック）
+- 日本語表示と IME による直接入力
+- Objects 9 種 / Effects 23 種 / Decoders 3 種 / Easing 1 種の登録
+- 720p / 1080p の H.264 MP4 書き出し（動画＋画像プロジェクトを含む）
+- 音声プラグイン（VST3）のスキャン（実適用は未確認）
 
-## ダウンロード方法
+## 動作環境
 
-[NeoUtlのお部屋](https://neoutl.taisho-guy.org)をご確認下さい。
-
-## SDK
-
-プラグインのABI・GPU resource・callback・ビルドと配置手順は[SDK仕様書](sdk/README.md)をご覧ください。
-
-## ビルド方法
-
-[CONTRIBUTING.md](https://codeberg.org/taisho-guy/NeoUtl/src/branch/main/CONTRIBUTING.md)をご確認下さい。
-
-## 採用技術
-
-NeoUtlはRust言語で実装されています。
-
-|項目|採用クレート|
+| 項目 | 要件 |
 |---|---|
-|GUI|[egui](https://www.egui.rs/)|
-|プレビュー|[wgpu](https://wgpu.rs)|
-|シェーダ|[Slang](https://shader-slang.org/)|
-|ECS|[Shipyard](https://github.com/leudz/shipyard)|
-|非同期処理|[tokio](https://tokio.rs/)|
-|デコード・エンコード|[FFmpeg](https://ffmpeg.org/)|
+| CPU | Apple Silicon（arm64）。Intel Mac / Universal2 は配布しません |
+| OS | macOS 27.0 以降（実測値。同梱 FFmpeg 9.0.2 の dylib が `minos 27.0` のため） |
+| 空き容量 | 約 100 MB（展開後） |
 
-## アーキテクチャ
+macOS 27.0 未満では、同梱 dylib のロードに失敗する可能性があります。Intel Mac では動作しません。
 
-```mermaid
-flowchart TB
-    subgraph BIN["src/ — バイナリクレート NeoUtl"]
-        MAIN["main.rs<br/>エントリポイント"]
-        APPSTATE["app_state.rs"]
-        DOC["document.rs"]
-        PROJECT["project.rs"]
-        SCHEMA_RS["schema.rs"]
-        EXPORT["export.rs"]
-        CONFIG["config.rs"]
-        HOTRELOAD["hot_reload.rs"]
-        SHORTCUTS["shortcuts.rs"]
-        THEME["theme.rs"]
-        SPLASH["splash.rs"]
-        UPDATE["update.rs"]
-        CRASH["crash_report.rs"]
-        LOCALIZATION["localization.rs"]
-        EGUILOOP["egui_loop.rs"]
-        GPUSHARED["gpu_shared.rs<br/>GPUデバイス共有 / AcceleratorHandle生成"]
-    end
+## インストール
 
-    subgraph ECS["src/ecs/ — Entity Component System"]
-        ECS_MOD["mod.rs / EcsWorld"]
-        ECS_COMP["components/*<br/>hierarchy / clip_target / group_control / time_remap<br/>expression / layer_state / camera / light"]
-        ECS_WORLD["world/*<br/>object_crud / hierarchy_ops / serialize / transform"]
-        ECS_SYS["systems/*<br/>active_query / camera / curtain / effect_stack / expression"]
-        ECS_HISTORY["history.rs<br/>Undo/Redo HistoryStack / Writeback連携"]
-        ECS_PRESET["resources/preset_store.rs<br/>PresetStore / JSON永続化"]
-        ECS_VIEWS["object_query_views.rs"]
-        ECS_TYPES["types.rs"]
-        ECS_TRANSFORM["transform.rs<br/>Camera / Light / Transform"]
-        ECS_RES["resources.rs"]
-        ECS_EFFECTS["effects.rs"]
-        ECS_OBJSCHEMA["object_schema.rs"]
-        ECS_AUDIOPLUG["audio_plugins.rs"]
-    end
+1. [Releases](https://github.com/Ren9618/MacUtl/releases) から `MacUtl-0.8.11-macos.dmg` をダウンロードします。
+2. DMG を開き、`MacUtl.app` を `Applications` フォルダへドラッグします。
+3. `/Applications/MacUtl.app` を起動します。
 
-    subgraph LOADERS["src/objects, src/effects, src/easings — ローダー"]
-        OBJ_LOADER["objects/loader.rs<br/>setup_acceleratorブロードキャスト"]
-        EFFECT_LOADER["effects/loader.rs<br/>setup_acceleratorブロードキャスト / Writeback"]
-        EASING_LOADER["easings/loader.rs"]
-        EASING_REG["easings/registry.rs"]
-    end
+### 初回起動（Gatekeeper）
 
-    subgraph RENDERER["src/renderer/ — GPUレンダリング"]
-        PIPELINE["pipeline/*<br/>RenderEngine / 動的デバイス再構成・ロスト復帰"]
-        EFFECT_FILTER["effect_filter.rs"]
-        SLANG_SHADERS["slang/media*.slang"]
-    end
+本アプリは **ad-hoc 署名のみ** で、Apple Developer ID 署名・公証（notarization）は行っていません。そのため、初回起動時に Gatekeeper が「開発元を確認できません」と表示します。以下のいずれかで起動してください。
 
-    subgraph UI["src/ui/ — egui UI層"]
-        UI_MOD["mod.rs"]
-        UI_TIMELINE["timeline/*<br/>タイムライン編集 / Undo/Redo連携"]
-        UI_PROPS["properties/*<br/>プロパティパネル / プリセット適用"]
-        UI_PREVIEW["preview.rs"]
-        UI_SETTINGS["system_settings.rs"]
-        UI_PROJSET["project_settings.rs"]
-        UI_SCENESET["scene_settings.rs"]
-        UI_DIALOGS["dialogs.rs / effect_add_dialog.rs"]
-        UI_CATALOG["effect_catalog.rs"]
-        UI_LAUNCHER["launcher.rs"]
-        UI_EXPORTDLG["export_dialog.rs"]
-        UI_KEYBIND["keybindings.rs"]
-    end
+- Finder で `MacUtl.app` を **右クリック →「開く」** を選び、ダイアログで「開く」を押す（推奨）
+- 一度起動を試したあと、**システム設定 → プライバシーとセキュリティ → セキュリティ** の「このまま開く」を押す
+- ターミナルで隔離属性を外す:
 
-    subgraph AUDIO["src/audio/ — オーディオ"]
-        AUDIO_MIXER["mixer.rs"]
-        AUDIO_PLUGREG["plugin_registry.rs"]
-        AUDIO_PLUGSET["plugin_settings.rs"]
-    end
+  ```bash
+  xattr -dr com.apple.quarantine /Applications/MacUtl.app
+  ```
 
-    subgraph APICRATES["crates/neoutl-*-api — 契約層"]
-        MEDIA_API["neoutl-media-api"]
-        OBJECT_API["neoutl-object-api<br/>Camera・Light Stable ID / setup_accelerator"]
-        EFFECT_API["neoutl-effect-api<br/>ROI / Audio / Writeback / setup_accelerator"]
-        EASING_API["neoutl-easing-api"]
-        MLT_API["neoutl-mlt-api<br/>Filter trait"]
-        SHARED_ABI["neoutl-shared-abi<br/>AcceleratorHandle / AcceleratorBackend / PluginVersion"]
-        EXPRESSION_API["neoutl-expression-api<br/>数式評価 / AST / bind_expression_host"]
-    end
+Gatekeeper をシステム全体で無効化する操作（`spctl --master-disable` 等）は推奨しません。ZIP 版を使う場合も同様の手順が必要です。
 
-    subgraph RUNTIME["crates/neoutl-media-runtime — デコード実行基盤"]
-        MR_LOADER["loader.rs"]
-        MR_WORKER["worker.rs<br/>デコードワーカー"]
-        MR_CACHE["cache.rs<br/>テクスチャキャッシュ / フッテージ共有"]
-        MR_RUNTIME["runtime.rs"]
-        MR_TEXT["text.rs"]
-        MR_WAVE["waveform.rs"]
-    end
+## 既知の制限
 
-    subgraph MEDIABACK["crates/neo-media-*, media/* — デコーダ・変換実装"]
-        FFMPEG_C["neo-media-ffmpeg<br/>decoder / encoder / vaapi"]
-        SWSCALE["neo-media-swscale<br/>Slang/WGSLスケール変換"]
-        SYMPHONIA["media/symphonia-decoder"]
-        IMGDEC["media/image-decoder"]
-        MEDIA_CORE["neo-media-core"]
-        MEDIA_CACHE["neo-media-cache"]
-        MEDIA_SUPPORT["neo-media-support"]
-    end
+- ベースの NeoUtl が **プレアルファ** です。API・プロジェクト形式・UI は予告なく変わります。
+- **Intel Mac 非対応**（arm64 thin のみ）。
+- VST3 等の音声プラグインは **スキャン確認のみ** で、実際の音声処理への適用は未確認です。
+- **自動更新はありません。** 新しい版は Releases から手動で取得してください。macOS では `.app` の自己置換がコード署名を壊すため、自動更新を無効化しています。
+- Apple Developer ID 署名・公証が無いため、Gatekeeper の警告が出ます。
+- 起動時にシステムフォントを一括プリロードするため、一時的にメモリ使用量が増えることがあります。
+- 本家 AviUtl のプラグインとの互換性はありません。
 
-    subgraph PLUGINHOST["crates/maolan-host-adapter — プラグインホスト"]
-        MH_REGISTRY["registry.rs"]
-        MH_PROCESS["process.rs"]
-        MH_TYPES["types.rs"]
-        MH_CRASH["crash.rs"]
-        MH_BINPATH["binary_path.rs"]
-    end
+## プライバシ
 
-    subgraph OBJECTS_SO["crates/objects/* — オブジェクト .so プラグイン (9種)"]
-        OBJ_VIDEO["video"]
-        OBJ_AUDIO["audio"]
-        OBJ_IMAGE["image"]
-        OBJ_TEXT["text"]
-        OBJ_SHAPE["shape"]
-        OBJ_SCENE["scene"]
-        OBJ_GROUP["group_control"]
-        OBJ_CAMERA["camera"]
-        OBJ_LIGHT["light"]
-    end
+MacUtl は通常の編集・書き出し操作で外部サーバへデータを送信しません。
 
-    subgraph EFFECTS_SO["crates/effects/* — エフェクト .so プラグイン (23種)"]
-        EFF_LIST["transform / color_correction / mosaic<br/>motion_blur / lens_blur / radial_blur<br/>directional_blur / border_blur<br/>chromatic_aberration / diffuse_light<br/>drop_shadow / clipping / diagonal_clipping<br/>mask_shape / displacement_map_*<br/>image_loop / pixel_sorter / vibration<br/>text_outline"]
-    end
-
-    subgraph SHADERBUILD["crates/neoutl-*-shader-build — Slangビルド支援"]
-        EFFSHADERBUILD["neoutl-effect-shader-build"]
-        OBJSHADERBUILD["neoutl-object-shader-build"]
-    end
-
-    subgraph SCRIPTLUA["crates/neoutl-lua-runtime, neoutl-effect-lua"]
-        LUA_RUNTIME["neoutl-lua-runtime"]
-        EFFECT_LUA["neoutl-effect-lua"]
-    end
-
-    subgraph EASINGSTD["crates/easings/neoutl-easing-standard"]
-        EASING_CURVE["curve.rs"]
-        EASING_SCRIPT["script.rs"]
-    end
-
-    subgraph MISC["crates/neoutl-color, neoutl-schema"]
-        COLOR["neoutl-color"]
-        SCHEMA_PROTO["neoutl-schema<br/>protobuf (document / export / keymap / settings)"]
-    end
-
-    subgraph XTASK["crates/xtask — ビルドツール"]
-        XTASK_MAIN["main.rs"]
-        XTASK_SLANG["slang.rs"]
-        XTASK_DXC["dxc.rs"]
-    end
-
-    %% メイン・ドキュメント・設定
-    MAIN --> APPSTATE
-    MAIN --> ECS_MOD
-    MAIN --> UI_MOD
-    MAIN --> EGUILOOP
-    APPSTATE --> DOC
-    DOC --> PROJECT
-    PROJECT --> SCHEMA_RS
-    SCHEMA_RS --> SCHEMA_PROTO
-    EXPORT --> RUNTIME
-    EXPORT --> PIPELINE
-
-    %% ECS 内部連携
-    ECS_MOD --> ECS_COMP
-    ECS_MOD --> ECS_WORLD
-    ECS_MOD --> ECS_SYS
-    ECS_MOD --> ECS_RES
-    ECS_SYS --> ECS_TRANSFORM
-    ECS_SYS --> ECS_EFFECTS
-    ECS_SYS --> ECS_VIEWS
-    ECS_EFFECTS --> EFFECT_LOADER
-    ECS_OBJSCHEMA --> OBJ_LOADER
-    ECS_AUDIOPLUG --> AUDIO_PLUGREG
-
-    %% Expression連携 (Phase 6)
-    ECS_COMP --> EXPRESSION_API
-    ECS_SYS --> EXPRESSION_API
-    EXPRESSION_API -.数式評価/値書き込み.-> ECS_COMP
-
-    %% Undo/History & PresetStore (Phase 12, 13)
-    EFFECT_LOADER -.poll_writeback.-> ECS_HISTORY
-    ECS_HISTORY --> ECS_WORLD
-    ECS_PRESET --> ECS_WORLD
-
-    %% ローダー・プラグインホスト
-    OBJ_LOADER --> PLUGINHOST
-    EFFECT_LOADER --> PLUGINHOST
-    EASING_LOADER --> EASING_REG
-    EASING_REG --> EASINGSTD
-    EASING_REG --> EASING_API
-
-    %% GPU動的再設定 & アクセラレータブロードキャスト (Phase 7)
-    GPUSHARED --> SHARED_ABI
-    GPUSHARED -.broadcast_accelerator.-> OBJ_LOADER
-    GPUSHARED -.broadcast_accelerator.-> EFFECT_LOADER
-    OBJ_LOADER -.setup_accelerator.-> OBJECTS_SO
-    EFFECT_LOADER -.setup_accelerator.-> EFFECTS_SO
-    PIPELINE -.reconfigure / reset_device_lost.-> GPUSHARED
-
-    %% プラグインと ABI
-    PLUGINHOST --> MH_REGISTRY
-    MH_REGISTRY --> OBJECTS_SO
-    MH_REGISTRY --> EFFECTS_SO
-    MH_PROCESS --> SHARED_ABI
-    OBJECTS_SO --> OBJECT_API
-    EFFECTS_SO --> EFFECT_API
-    EFFECTS_SO --> SHADERBUILD
-    OBJECTS_SO --> SHADERBUILD
-
-    %% UI 接続
-    UI_MOD --> UI_TIMELINE
-    UI_MOD --> UI_PROPS
-    UI_MOD --> UI_PREVIEW
-    UI_MOD --> UI_SETTINGS
-    UI_MOD --> UI_DIALOGS
-    UI_TIMELINE --> ECS_MOD
-    UI_TIMELINE --> ECS_HISTORY
-    UI_PROPS --> ECS_EFFECTS
-    UI_PROPS --> ECS_HISTORY
-    UI_PROPS --> ECS_PRESET
-    UI_PREVIEW --> PIPELINE
-    UI_SETTINGS --> CONFIG
-    UI_CATALOG --> EFFECT_LOADER
-
-    %% レンダラー・メディアパイプライン
-    PIPELINE --> SLANG_SHADERS
-    PIPELINE --> GPUSHARED
-    PIPELINE --> EFFECT_FILTER
-    PIPELINE --> RUNTIME
-    PIPELINE --> MLT_API
-    ECS_SYS --> PIPELINE
-
-    RUNTIME --> MR_LOADER
-    RUNTIME --> MR_WORKER
-    MR_WORKER --> MR_CACHE
-    MR_LOADER --> MEDIABACK
-    MR_WORKER --> MEDIABACK
-    MR_TEXT --> MEDIA_API
-    MR_WAVE --> MEDIA_API
-
-    FFMPEG_C --> MEDIA_CORE
-    SWSCALE --> MEDIA_CORE
-    SYMPHONIA --> MEDIA_CORE
-    IMGDEC --> MEDIA_CORE
-    MEDIA_CORE --> MEDIA_CACHE
-    MEDIA_CORE --> MEDIA_SUPPORT
-
-    AUDIO_MIXER --> MEDIABACK
-    AUDIO_PLUGREG --> PLUGINHOST
-
-    EFFECTS_SO --> LUA_RUNTIME
-    EFFECT_LUA --> LUA_RUNTIME
-
-    XTASK_MAIN --> XTASK_SLANG
-    XTASK_MAIN --> XTASK_DXC
-    XTASK_MAIN -.i18n生成.-> LOCALIZATION
-    XTASK_MAIN -.ビルド出力.-> OBJECTS_SO
-    XTASK_MAIN -.ビルド出力.-> EFFECTS_SO
-    XTASK_MAIN -.ビルド出力.-> BIN
-
-    MEDIA_API -.契約.-> MR_LOADER
-    OBJECT_API -.契約.-> OBJ_LOADER
-    EFFECT_API -.契約.-> EFFECT_LOADER
-    MLT_API -.契約.-> RENDERER
-```
-
-## 派生
-
-| プロジェクト | 開発者 | 場所 | エンジン | 状況 |
-| --- | --- | --- | --- | --- |
-| NeoUtl | [taisho-guy](https://codeberg.org/taisho-guy) | [`main`ブランチ](https://codeberg.org/taisho-guy/NeoUtl/src/branch/main) | wgpu | ✅️ 実装中 |
-| AviQtl | [taisho-guy](https://codeberg.org/taisho-guy) / [GT-610](https://codeberg.org/GT610) | [`aviqtl`ブランチ](https://codeberg.org/taisho-guy/NeoUtl/src/branch/aviqtl) | Qt Quick | ❌️ 開発終了 |
-| AviQtl Plus | [GT-610](https://github.com/GT-610) | [GitHub](https://github.com/GT-610/AviQtl-Plus) | Qt Quick | ✅️ AviQtlのフォーク |
-
-## 貢献方法
-
-プルリクエストについては[貢献の初め方](https://codeberg.org/taisho-guy/NeoUtl/issues/53)をご覧下さい。
-
-バグ報告、提案、議論などについては、[イシュー](https://codeberg.org/taisho-guy/NeoUtl/issues)を作成して下さい。
-
-プルリクエスト、イシュー共に、テンプレートに従って下さい。日本語でお願い致します。
-
-## スペシャルサンクス
-
-| プロジェクト名 | ライセンス | 参考内容 |
-| --- | --- | --- |
-| [AviUtl](https://spring-fragrance.mints.ne.jp/aviutl/) | プロプライエタリ | GUI/概念の構成 |
-| [NiVE3](https://www.nive.jp/) | GPLv3 | 実装設計 |
-
-> これらのプロジェクトからはソースコード等を一切流用しておりません。
+- クラッシュレポート（Sentry / GlitchTip）は **macOS では初期化されません**。上流の DSN が残っていますが、macOS ビルドではコードレベルで無効化しています。
+- 更新チェックは **macOS では無効** です。起動時に Codeberg の上流 API へ問い合わせることはありません。
+- テレメトリ、利用統計、広告 SDK はありません。
+- VST3 プラグインのスキャンはローカルのファイルシステムに対してのみ行います。
+- ユーザーが README 内の外部リンクを開いた場合のみ、ブラウザがそのサイトへ接続します。
 
 ## ライセンス
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+MacUtl は **GNU Affero General Public License version 3 or later（AGPL-3.0-or-later）** で配布します。上流 NeoUtl の `LICENSE` と著作権表示を保持しています。
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+- [LICENSE](LICENSE) — AGPL-3.0 全文
+- [LICENSE_AUDIT.md](LICENSE_AUDIT.md) — ライセンス本調査（Rust / FFmpeg / branding / フォント / AGPL チェックリスト）
+- [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) — 全 Rust クレートと同梱ネイティブライブラリのライセンス
+- [MACOS_CHANGES.md](MACOS_CHANGES.md) — 上流からの変更点と変更日
+- [third_party/](third_party/) — FFmpeg 等のライセンス本文と対応ソース情報
 
-You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/agpl.html>.
+本アプリには GPL-3.0-or-later の FFmpeg（Homebrew 9.0.2、`--enable-gpl --enable-version3`）と、GPL の x264 / x265 が同梱されています。GPLv3 §13 に基づき AGPLv3 と組み合わせて配布しています。完全なソースはこのリポジトリで公開しています。
+
+### 上流へのクレジット
+
+- NeoUtl: <https://codeberg.org/taisho-guy/NeoUtl>（AGPL-3.0-or-later）
+- NeoUtl 公式サイト: <https://neoutl.taisho-guy.org>
+- 上流 README: [README.upstream.md](README.upstream.md)
+- 上流の履歴は書き換えず、`0ead393` の上にフォーク側の変更を積んでいます。
+
+## サポート
+
+- サポートは **GitHub Issues のみ** です: <https://github.com/Ren9618/MacUtl/issues>
+- 非同期対応で、返信・修正・対応時期を保証しません。
+- 上流 NeoUtl / Codeberg へ、このフォークの不具合を報告しないでください。
+- 不具合報告には、macOS のバージョン、Mac の機種、再現手順、可能ならログを添付してください。
+
+## ソースからビルド
+
+### 必要なもの
+
+- macOS 27.0 以降 / Apple Silicon
+- Xcode Command Line Tools
+- Rust 1.99.1 以降（`rustup` 推奨）
+- Python 3
+- Homebrew の FFmpeg 9.0.2（GPL ビルド。`--enable-gpl --enable-version3 --enable-libx264 --enable-libx265` を含むもの）
+- `git`、`hdiutil`、`codesign`（macOS 標準）
+
+### 手順
+
+```bash
+git clone --recurse-submodules https://github.com/Ren9618/MacUtl.git
+cd MacUtl
+
+# 依存関係を取得してビルド
+cargo xtask build --release
+
+# MacUtl.app / DMG / ZIP を生成
+cargo xtask package --release
+```
+
+生成物:
+
+- `target/bundle/MacUtl.app`
+- `target/bundle/MacUtl-0.8.11-macos.dmg`
+- `target/bundle/MacUtl-0.8.11-macos.zip`
+
+サブモジュール（`assets` / `i18n` / `sdk` / `wiki`）は参照のまま維持しています。`--recurse-submodules` を忘れた場合は `git submodule update --init --recursive` を実行してください。
+
+### テスト
+
+```bash
+cargo fmt --all -- --check
+cargo test --workspace --exclude NeoUtl
+```
+
+## 謝辞
+
+- NeoUtl 開発チーム（taisho-guy 氏ほか）
+- AviUtl 作者の KEN 氏、および ExEdit の作者の方々
+- 依存クレート・FFmpeg・各コーデックの開発者
+
+本プロジェクトは AviUtl からソースコードを流用したものではなく、NeoUtl のフォークとしてその成果物を利用しています。
