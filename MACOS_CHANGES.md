@@ -120,7 +120,9 @@ Key verification results are summarized in `MACOS_PHASE5_REPORT.md`
 `cargo xtask build` regenerates `i18n/ja.yml` from Japanese string literals in
 the source tree (existing upstream behavior). The generated file belongs to
 the `i18n` submodule's working tree; it is not committed to the MacUtl
-superproject. A clean build reproduces it automatically.
+superproject. A clean build reproduces it automatically. For a checkout that
+must exactly match the release build without running xtask, apply
+`patches/i18n-macutl-ja.patch` to the `i18n` submodule first.
 
 ## 7. Contact
 

@@ -1,6 +1,6 @@
 use maolan_host_adapter::{PluginCatalogEntry, PluginFormat};
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 
 static REGISTRY: OnceLock<Mutex<Vec<PluginCatalogEntry>>> = OnceLock::new();

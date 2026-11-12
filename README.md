@@ -69,7 +69,7 @@ Gatekeeper をシステム全体で無効化する操作（`spctl --master-disab
 
 MacUtl は通常の編集・書き出し操作で外部サーバへデータを送信しません。
 
-- クラッシュレポート（Sentry / GlitchTip）は **macOS では初期化されません**。上流の DSN が残っていますが、macOS ビルドではコードレベルで無効化しています。
+- クラッシュレポート（Sentry / GlitchTip）は **macOS では初期化されません**。上流の DSN 文字列はソースに残っていますが、macOS ビルドではコードレベルで無効化しています。
 - 更新チェックは **macOS では無効** です。起動時に Codeberg の上流 API へ問い合わせることはありません。
 - テレメトリ、利用統計、広告 SDK はありません。
 - VST3 プラグインのスキャンはローカルのファイルシステムに対してのみ行います。
@@ -132,6 +132,12 @@ cargo xtask package --release
 - `target/bundle/MacUtl-0.8.11-macos.zip`
 
 サブモジュール（`assets` / `i18n` / `sdk` / `wiki`）は参照のまま維持しています。`--recurse-submodules` を忘れた場合は `git submodule update --init --recursive` を実行してください。
+
+上流 `i18n` サブモジュールの固定コミットには、macOS 向けの日本語診断文言が一部含まれていません。リリース版と同一の表示でビルドする場合は、次のパッチを適用してください（必須ではありません。未適用の場合はキー文字列がそのまま表示されます）。
+
+```bash
+git -C i18n apply ../patches/i18n-macutl-ja.patch
+```
 
 ### テスト
 
