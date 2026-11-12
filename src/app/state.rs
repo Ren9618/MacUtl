@@ -351,7 +351,7 @@ pub fn redo_active(state: &SharedAppState) -> bool {
 
 pub fn active_project_window_title(state: &SharedAppState) -> String {
     let s = state.lock().unwrap();
-    format!("NeoUtl - {}", s.sessions[s.active].meta.name)
+    format!("MacUtl - {}", s.sessions[s.active].meta.name)
 }
 
 pub fn save_session(state: &SharedAppState, index: usize) -> bool {

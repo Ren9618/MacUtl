@@ -214,7 +214,7 @@ impl eframe::App for NeoUtlApp {
         self.stage = stage;
 
         if stage == Stage::Launcher {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Title("NeoUtl".to_owned()));
+            ctx.send_viewport_cmd(egui::ViewportCommand::Title("MacUtl".to_owned()));
             let blocked = self.pending_project.is_some();
             egui::CentralPanel::default().show(ui, |ui| {
                 ui.add_enabled_ui(!blocked, |ui| {
@@ -342,7 +342,7 @@ pub fn run(
         });
     let gpu_for_app = gpu.clone();
     eframe::run_native(
-        "NeoUtl",
+        "MacUtl",
         options,
         Box::new(move |cc| {
             crate::app::theme::install(&cc.egui_ctx);

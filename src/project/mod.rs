@@ -82,7 +82,7 @@ pub fn copy_project(dir: &Path) -> std::io::Result<ProjectMeta> {
 /// 実行時に書き込むデータ（プロジェクト・設定）のルート。
 ///
 /// macOS の `.app` バンドル内では実行ファイル隣に書き込むとコード署名が
-/// 破壊されるため、`~/Library/Application Support/NeoUtl` を使う。
+/// 破壊されるため、`~/Library/Application Support/MacUtl` を使う。
 /// 素のバイナリ（`Contents/MacOS` 配下でない実行ファイル）は従来どおり
 /// 実行ファイル隣を使い、Phase 2/3 の挙動を維持する。
 pub(crate) fn runtime_data_dir() -> PathBuf {
@@ -98,7 +98,7 @@ pub(crate) fn runtime_data_dir() -> PathBuf {
             return PathBuf::from(home)
                 .join("Library")
                 .join("Application Support")
-                .join("NeoUtl");
+                .join("MacUtl");
         }
     }
 
