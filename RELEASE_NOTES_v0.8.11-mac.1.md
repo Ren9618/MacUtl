@@ -74,6 +74,6 @@ GitHub Issues のみ・非同期対応です。返信や修正を保証するも
 ## チェックサム
 
 ```text
-DMG SHA-256: (SHA256_DMG)
-ZIP SHA-256: (SHA256_ZIP)
+DMG SHA-256: b08ec088ccf18d33f59688add3d763aa2605a9653f363a28dcfc3b4e9aa05548
+ZIP SHA-256: d1d689d03cf0f1a735d182fe9c27b8d1bd4f6b2e3fa5e406c716bc0619252aba
 ```
