@@ -3,7 +3,7 @@
 - **日付**: 2026-11-13
 - **対象**: MacUtl 0.8.11（macOS fork、ベース: NeoUtl v0.8.11 / `0ead39350db55996810de53da79d02fbc98355f5`）
 - **リポジトリ**: <https://github.com/Ren9618/MacUtl>
-- **リリース**: `v0.8.11-mac.2`（本報告書作成時点では未公開。公開後にタグ・成果物ハッシュを追記する）
+- **リリース**: `v0.8.11-mac.2`（2026-11-13 公開、<https://github.com/Ren9618/MacUtl/releases/tag/v0.8.11-mac.2>）
 - **結論**: Phase 7 の完了条件を満たした。レイアウトの変更・保存・復元、極小パネル、IME、保存／読込、720p 書き出しの実機確認まで完了し、リリースを妨げる不具合はない。
 
 ---
@@ -257,21 +257,26 @@ Phase 7 の検証中に「書き出しダイアログがフォーカスを失う
 
 ---
 
-## 7. リリース準備
+## 7. リリース
 
 - バージョン: `0.8.11`（`Cargo.toml`）
-- 予定タグ: `v0.8.11-mac.2`
+- タグ: `v0.8.11-mac.2`（annotated tag `31dbe9e759665f539f0c576298fbe96cebee1095` → コミット `aa624ed5fce6b85e130e9f2164879002ce7ad95a`）
 - ベース: `v0.8.11-mac.1`（`main` は `8e97a0f4`）
 - パッケージコマンド: `cargo xtask package --release`
-- 成果物（予定）: `MacUtl-0.8.11-macos.dmg`、`MacUtl-0.8.11-macos.zip`
-- 署名: `codesign --sign -`（ad-hoc）
+- 署名: `codesign --sign -`（ad-hoc、`CFBundleVersion=1185`）
 - リリースノート: `RELEASE_NOTES_v0.8.11-mac.2.md`
+- 公開日時: 2026-11-13 18:42 JST（`2026-11-13T09:42:49Z`）
 
-公開後、次を本報告書へ追記する。
+| 成果物 | サイズ | SHA-256 |
+|---|---:|---|
+| `MacUtl-0.8.11-macos.dmg` | 40,964,480 bytes | `4510a61e5e69a4277ef8b3d605f739405c6c6ca6b8b23f4c9ef2b79b75b6de70` |
+| `MacUtl-0.8.11-macos.zip` | 36,433,577 bytes | `83e53a23581cf8a0e46ca3c97401ab6101a5511906ef4081de7a605b16205ad3` |
 
-- タグオブジェクトとタグ先コミット
-- DMG / ZIP のサイズと SHA-256
-- GitHub Releases の URL
+- GitHub の asset digest は上記のローカル SHA-256 と一致。
+- Releases から再ダウンロードした DMG / ZIP の SHA-256 も一致。
+- マウントした `MacUtl.app` は `codesign --verify --deep --strict` に合格（Identifier `works.rayno.macutl`、ad-hoc、arm64）。
+- `CFBundleShortVersionString=0.8.11`、`CFBundleVersion=1185`。
+- 本報告書とリリースノートのチェックサム更新はタグ公開後に `main` へ追加するため、タグ時点のソースには含まれない。
 
 ---
 

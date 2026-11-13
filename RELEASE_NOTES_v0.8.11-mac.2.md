@@ -85,6 +85,6 @@ GitHub Issues のみ・非同期対応です。返信や修正を保証するも
 ## チェックサム
 
 ```text
-DMG SHA-256: （パッケージ後に更新）
-ZIP SHA-256: （パッケージ後に更新）
+DMG SHA-256: 4510a61e5e69a4277ef8b3d605f739405c6c6ca6b8b23f4c9ef2b79b75b6de70
+ZIP SHA-256: 83e53a23581cf8a0e46ca3c97401ab6101a5511906ef4081de7a605b16205ad3
 ```
