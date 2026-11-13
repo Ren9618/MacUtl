@@ -129,7 +129,7 @@ particular, `self_cell` is used under Apache-2.0 (not GPL-2.0-only) and
 
 ### 2.1 License overview
 
-- **Apache License 2.0** — 327 package(s)
+- **Apache License 2.0** — 329 package(s)
 - **MIT License** — 96 package(s)
 - **ISC License** — 25 package(s)
 - **Unicode License v3** — 19 package(s)
@@ -7211,6 +7211,7 @@ Used by:
 
 - bit-set 0.10.0 — https://github.com/contain-rs/bit-set
 - bit-vec 0.9.1 — https://github.com/contain-rs/bit-vec
+- egui_tiles 0.17.1 — https://github.com/rerun-io/egui_tiles
 - linked-hash-map 0.5.6 — https://github.com/contain-rs/linked-hash-map
 - minimal-lexical 0.2.1 — https://github.com/Alexhuszagh/minimal-lexical
 - presser 0.3.1 — https://github.com/EmbarkStudios/presser
@@ -8739,6 +8740,7 @@ Used by:
 - emath 0.36.2 — https://github.com/emilk/egui/tree/main/crates/emath
 - enum-map-derive 0.17.0 — https://codeberg.org/xfix/enum-map
 - enum-map 2.7.3 — https://codeberg.org/xfix/enum-map
+- enumn 0.1.14 — https://github.com/dtolnay/enumn
 - epaint 0.36.2 — https://github.com/emilk/egui/tree/main/crates/epaint
 - epaint_default_fonts 0.36.2 — https://github.com/emilk/egui/tree/main/crates/epaint_default_fonts
 - fdeflate 0.3.7 — https://github.com/image-rs/fdeflate

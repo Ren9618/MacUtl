@@ -8,12 +8,8 @@ mod track;
 use crate::app::state::{self as app_state, SharedAppState};
 use crate::ui::effect_add_dialog::EffectAddDialog;
 use crate::ui::effect_catalog::EffectCatalogState;
-use crate::ui::preview::PreviewPanel;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 pub struct PropertiesPanel {
-    pub open: bool,
     pub effect_add: EffectAddDialog,
     selected: Option<usize>,
 }
@@ -21,7 +17,6 @@ pub struct PropertiesPanel {
 impl PropertiesPanel {
     pub fn new() -> Self {
         Self {
-            open: true,
             effect_add: EffectAddDialog::new(),
             selected: None,
         }
@@ -60,19 +55,7 @@ impl PropertiesPanel {
         }
     }
 
-    pub fn show(
-        &mut self,
-        _ctx: &egui::Context,
-        ui: &mut egui::Ui,
-        state: &SharedAppState,
-        preview_panel: &Rc<RefCell<PreviewPanel>>,
-    ) {
-        if std::mem::take(&mut preview_panel.borrow_mut().open_properties) {
-            self.open = true;
-        }
-        if !self.open {
-            return;
-        }
+    pub fn show(&mut self, _ctx: &egui::Context, ui: &mut egui::Ui, state: &SharedAppState) {
         let holder = app_state::active_world(state);
         let mut world = holder.lock().unwrap();
         let objects = world.get_timeline_objects();
@@ -92,27 +75,30 @@ impl PropertiesPanel {
         };
 
         let palette = elegance::Theme::current(ui.ctx()).palette;
+        let show_sidebar = ui.available_width() >= 360.0;
 
-        egui::Panel::left("properties_effect_sidebar")
-            .resizable(true)
-            .default_size(180.0)
-            .size_range(140.0..=320.0)
-            .frame(egui::Frame::default().fill(palette.bg).inner_margin(6.0))
-            .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.colored_label(palette.focus, t!("エフェクト"));
-                    if ui.small_button(t!("＋追加")).clicked() {
-                        self.effect_add.open();
-                    }
-                });
-                ui.separator();
-                egui::ScrollArea::vertical()
-                    .id_salt("properties_effect_sidebar_scroll")
-                    .auto_shrink([false, false])
-                    .show(ui, |ui| {
-                        effect_list::effects_sidebar(ui, &mut world, id);
+        if show_sidebar {
+            egui::Panel::left("properties_effect_sidebar")
+                .resizable(true)
+                .default_size(180.0)
+                .size_range(140.0..=320.0)
+                .frame(egui::Frame::default().fill(palette.bg).inner_margin(6.0))
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.colored_label(palette.focus, t!("エフェクト"));
+                        if ui.small_button(t!("＋追加")).clicked() {
+                            self.effect_add.open();
+                        }
                     });
-            });
+                    ui.separator();
+                    egui::ScrollArea::vertical()
+                        .id_salt("properties_effect_sidebar_scroll")
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            effect_list::effects_sidebar(ui, &mut world, id);
+                        });
+                });
+        }
 
         egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical()
@@ -121,6 +107,10 @@ impl PropertiesPanel {
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {
                         ui.heading(t!("プロパティ"));
+                        if !show_sidebar && ui.small_button(t!("＋エフェクト追加")).clicked()
+                        {
+                            self.effect_add.open();
+                        }
                         egui::ComboBox::from_id_salt("properties_object_picker")
                             .selected_text(format!("Object {id}"))
                             .show_ui(ui, |ui| {

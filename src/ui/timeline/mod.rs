@@ -74,7 +74,6 @@ struct MenuState {
 }
 
 pub struct TimelineWindow {
-    pub open: bool,
     zoom_scale: f32,
     selected_layer: i32,
     ripple_mode: bool,
@@ -97,7 +96,6 @@ pub struct TimelineWindow {
 impl TimelineWindow {
     pub fn new() -> Self {
         Self {
-            open: false,
             zoom_scale: 1.0,
             selected_layer: 0,
             ripple_mode: false,
@@ -158,13 +156,6 @@ impl TimelineWindow {
         _props_weak: &(),
         dialogs: &Rc<RefCell<DialogSet>>,
     ) {
-        if std::mem::take(&mut preview_panel.borrow_mut().open_timeline) {
-            self.open = true;
-        }
-        if !self.open {
-            return;
-        }
-
         let generation = preview_panel.borrow().session_generation();
         if generation != self.last_generation {
             self.last_generation = generation;
@@ -194,6 +185,13 @@ impl TimelineWindow {
         _props_weak: &(),
         dialogs: &Rc<RefCell<DialogSet>>,
     ) {
+        if ui.available_height() < RULER_HEIGHT + LAYER_HEIGHT {
+            ui.centered_and_justified(|ui| {
+                ui.weak(t!("タイムライン"));
+            });
+            return;
+        }
+
         self.handle_shortcuts(ui, state, preview_panel, &());
 
         let world_holder = app_state::active_world(state);

@@ -438,14 +438,14 @@ mod tests {
     }
 
     static DUMMY_CAMERA_META: neoutl_object_api::ObjectMeta = neoutl_object_api::ObjectMeta {
-        stable_id: neoutl_object_api::CAMERA_STABLE_ID,
+        stable_id: neoutl_object_api::StrRef::from_str(neoutl_object_api::CAMERA_STABLE_ID),
         name: neoutl_object_api::StrRef::from_str("Camera"),
         dimensionality: neoutl_object_api::Dimensionality::ThreeD,
         property_groups: neoutl_object_api::FfiSlice::from_static(&[]),
     };
 
     static DUMMY_LIGHT_META: neoutl_object_api::ObjectMeta = neoutl_object_api::ObjectMeta {
-        stable_id: neoutl_object_api::LIGHT_STABLE_ID,
+        stable_id: neoutl_object_api::StrRef::from_str(neoutl_object_api::LIGHT_STABLE_ID),
         name: neoutl_object_api::StrRef::from_str("Light"),
         dimensionality: neoutl_object_api::Dimensionality::ThreeD,
         property_groups: neoutl_object_api::FfiSlice::from_static(&[]),

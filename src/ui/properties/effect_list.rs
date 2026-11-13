@@ -31,6 +31,59 @@ fn toggle_group_open(object_id: usize, effect_index: i32, label: &str) {
     *entry = !*entry;
 }
 
+/// `SortableList` はタイトルを省略しないため、狭いサイドバーでは右端の
+/// ステータスバッジと重なる。名前が入るならバッジを残し、入らない場合は
+/// バッジを外して名前を優先し、それでも入らなければ省略記号で切り詰める。
+fn layout_effect_title(ui: &egui::Ui, title: &str, status: &str, row_width: f32) -> (String, bool) {
+    // egui-elegance 0.16.1 の sortable_list.rs と同じ寸法。
+    const ROW_PAD_X: f32 = 12.0;
+    const GRIP_AND_GAP: f32 = 30.0;
+    const PILL_PAD_X: f32 = 9.0;
+    const PILL_DOT: f32 = 6.0;
+    const PILL_GAP: f32 = 6.0;
+    const PILL_TEXT: f32 = 11.5;
+    const TITLE_GAP: f32 = 8.0;
+
+    let body = elegance::Theme::current(ui.ctx()).typography.body;
+    let measure = |text: &str, size: f32| {
+        ui.painter()
+            .layout_no_wrap(
+                text.to_owned(),
+                egui::FontId::proportional(size),
+                egui::Color32::WHITE,
+            )
+            .size()
+            .x
+    };
+    let base_width = row_width - ROW_PAD_X * 2.0 - GRIP_AND_GAP - TITLE_GAP;
+    let pill_width = measure(status, PILL_TEXT) + PILL_PAD_X * 2.0 + PILL_DOT + PILL_GAP;
+    let with_pill = (base_width - pill_width).max(0.0);
+    if measure(title, body) <= with_pill {
+        return (title.to_owned(), true);
+    }
+    let without_pill = base_width.max(0.0);
+    if measure(title, body) <= without_pill {
+        return (title.to_owned(), false);
+    }
+
+    let ellipsis = "…";
+    if measure(ellipsis, body) > with_pill {
+        return (String::new(), true);
+    }
+    let mut fitted = String::new();
+    for ch in title.chars() {
+        let mut candidate = fitted.clone();
+        candidate.push(ch);
+        candidate.push('…');
+        if measure(&candidate, body) > with_pill {
+            break;
+        }
+        fitted.push(ch);
+    }
+    fitted.push('…');
+    (fitted, true)
+}
+
 pub fn effects_sidebar(ui: &mut egui::Ui, world: &mut EcsWorld, id: usize) {
     let effects = world.get_effects(id);
     let plugins = world.get_plugin_chain(id).unwrap_or_default();
@@ -40,22 +93,31 @@ pub fn effects_sidebar(ui: &mut egui::Ui, world: &mut EcsWorld, id: usize) {
     }
     let card = elegance::Theme::current(ui.ctx()).palette.card;
     if !effects.is_empty() {
+        let row_width = ui.available_width();
         let mut sortable_items: Vec<SortableItem> = effects
             .iter()
             .enumerate()
             .map(|(index, inst)| {
-                SortableItem::new(index.to_string(), inst.effect_id.clone()).status(
-                    if inst.enabled {
-                        t!("有効")
-                    } else {
-                        t!("無効")
-                    },
-                    if inst.enabled {
-                        BadgeTone::Ok
-                    } else {
-                        BadgeTone::Neutral
-                    },
-                )
+                let status = if inst.enabled {
+                    t!("有効")
+                } else {
+                    t!("無効")
+                };
+                let (title, show_status) =
+                    layout_effect_title(ui, &inst.effect_id, &status, row_width);
+                let item = SortableItem::new(index.to_string(), title);
+                if show_status {
+                    item.status(
+                        status,
+                        if inst.enabled {
+                            BadgeTone::Ok
+                        } else {
+                            BadgeTone::Neutral
+                        },
+                    )
+                } else {
+                    item
+                }
             })
             .collect();
         let original_order: Vec<usize> = (0..effects.len()).collect();

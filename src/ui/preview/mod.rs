@@ -7,6 +7,7 @@ mod viewport;
 
 use crate::app::shortcuts::{self, CommandId, Scope};
 use crate::app::state::{self as app_state, SharedAppState};
+use crate::app::workspace::{LayoutPreset, WorkspacePane};
 use crate::ecs::resources::ProjectResource;
 use crate::ecs::systems::get_active_objects_system;
 use crate::renderer::RenderEngine;
@@ -48,10 +49,12 @@ pub struct PreviewPanel {
     pub open_system_settings: bool,
     pub open_project_settings: bool,
     pub open_keybindings: bool,
-    pub open_timeline: bool,
     pub open_export: bool,
-    pub open_properties: bool,
     pub open_camera_view: bool,
+    /// 「表示」メニューやショートカットからのペインフォーカス要求。
+    pub focus_request: Option<WorkspacePane>,
+    /// レイアウトプリセットの適用要求。
+    pub preset_request: Option<LayoutPreset>,
     camera_view_mode: CameraViewMode,
 }
 
@@ -74,10 +77,10 @@ impl PreviewPanel {
             open_system_settings: false,
             open_project_settings: false,
             open_keybindings: false,
-            open_timeline: false,
             open_export: false,
-            open_properties: false,
             open_camera_view: false,
+            focus_request: None,
+            preset_request: None,
             camera_view_mode: CameraViewMode::Camera,
         }
     }
@@ -230,15 +233,15 @@ impl PreviewPanel {
     }
 
     fn menu_bar(&mut self, ui: &mut egui::Ui, state: &SharedAppState) {
-        use crate::ui::ui_ext::{row_between_style, row_style};
+        use crate::ui::ui_ext::row_between_style;
         use egui_taffy::{TuiBuilderLogic, tui};
         use elegance::{MenuBar, MenuItem};
         let mut open_export = false;
         let mut open_system_settings = false;
         let mut open_project_settings = false;
         let mut open_keybindings = false;
-        let mut open_timeline = false;
-        let mut open_properties = false;
+        let mut focus_request = None;
+        let mut preset_request = None;
         let row_width = ui.available_width();
         tui(ui, ui.id().with("preview_menu_bar_row"))
             .style(row_between_style(row_width))
@@ -292,14 +295,30 @@ impl PreviewPanel {
                             }
                         });
                         bar.menu(t!("表示"), |ui| {
-                            if ui.add(MenuItem::new(t!("拡張編集"))).clicked() {
-                                open_timeline = true;
+                            if ui.add(MenuItem::new(t!("プレビューを表示"))).clicked() {
+                                focus_request = Some(WorkspacePane::Preview);
                             }
-                            if ui.add(MenuItem::new(t!("プロパティ"))).clicked() {
-                                open_properties = true;
+                            if ui.add(MenuItem::new(t!("タイムラインを表示"))).clicked() {
+                                focus_request = Some(WorkspacePane::Timeline);
+                            }
+                            if ui.add(MenuItem::new(t!("プロパティを表示"))).clicked() {
+                                focus_request = Some(WorkspacePane::Properties);
                             }
                             if ui.add(MenuItem::new("カメラ視点")).clicked() {
                                 self.open_camera_view = true;
+                            }
+                            ui.separator();
+                            if ui.add(MenuItem::new(LayoutPreset::Ymm4.label())).clicked() {
+                                preset_request = Some(LayoutPreset::Ymm4);
+                            }
+                            if ui
+                                .add(MenuItem::new(LayoutPreset::Classic.label()))
+                                .clicked()
+                            {
+                                preset_request = Some(LayoutPreset::Classic);
+                            }
+                            if ui.add(MenuItem::new(t!("レイアウトを初期化"))).clicked() {
+                                preset_request = Some(LayoutPreset::Ymm4);
                             }
                         });
                         bar.menu(t!("ツール"), |ui| {
@@ -375,64 +394,6 @@ impl PreviewPanel {
                         });
                     });
                 });
-
-                tui.style(row_style(6.0)).add(|tui| {
-                    tui.ui(|ui| {
-                        ui.add(
-                            egui::DragValue::new(&mut self.speed_percent)
-                                .range(
-                                    crate::project::config::PLAYBACK_SPEED_MIN_PERCENT
-                                        ..=crate::project::config::PLAYBACK_SPEED_MAX_PERCENT,
-                                )
-                                .suffix("%"),
-                        );
-                    });
-                    tui.ui(|ui| {
-                        ui.label(t!("速度"));
-                    });
-                    tui.ui(|ui| {
-                        if ui
-                            .add_sized([28.0, 28.0], elegance::Button::new("⏭"))
-                            .clicked()
-                        {
-                            self.apply_frame(self.current_frame + 1, state);
-                        }
-                    });
-                    tui.ui(|ui| {
-                        let icon = if self.is_playing { "⏸" } else { "▶" };
-                        if ui
-                            .add_sized([28.0, 28.0], elegance::Button::new(icon))
-                            .clicked()
-                        {
-                            self.is_playing = !self.is_playing;
-                            let mixer = app_state::active_audio_mixer(state);
-                            if self.is_playing {
-                                self.playback_anchor = Some((Instant::now(), self.current_frame));
-                                mixer.lock().unwrap().play();
-                            } else {
-                                self.playback_anchor = None;
-                                mixer.lock().unwrap().pause();
-                            }
-                        }
-                    });
-                    tui.ui(|ui| {
-                        if ui
-                            .add_sized([28.0, 28.0], elegance::Button::new("⏮"))
-                            .clicked()
-                        {
-                            self.apply_frame(self.current_frame - 1, state);
-                        }
-                    });
-                    tui.ui(|ui| {
-                        let digits = self.total_frames.max(1).to_string().len();
-                        ui.monospace(format!(
-                            "{:0width$} / {}",
-                            self.current_frame,
-                            self.total_frames,
-                            width = digits
-                        ));
-                    });
-                });
             });
         if open_export {
             self.open_export = true;
@@ -446,12 +407,76 @@ impl PreviewPanel {
         if open_keybindings {
             self.open_keybindings = true;
         }
-        if open_timeline {
-            self.open_timeline = true;
+        if let Some(pane) = focus_request {
+            self.focus_request = Some(pane);
         }
-        if open_properties {
-            self.open_properties = true;
+        if let Some(preset) = preset_request {
+            self.preset_request = Some(preset);
         }
+    }
+
+    fn playback_toolbar(&mut self, ui: &mut egui::Ui, state: &SharedAppState) {
+        use crate::ui::ui_ext::row_style;
+        use egui_taffy::{TuiBuilderLogic, tui};
+        tui(ui, ui.id().with("preview_playback_toolbar"))
+            .style(row_style(6.0))
+            .show(|tui| {
+                tui.ui(|ui| {
+                    ui.add(
+                        egui::DragValue::new(&mut self.speed_percent)
+                            .range(
+                                crate::project::config::PLAYBACK_SPEED_MIN_PERCENT
+                                    ..=crate::project::config::PLAYBACK_SPEED_MAX_PERCENT,
+                            )
+                            .suffix("%"),
+                    );
+                });
+                tui.ui(|ui| {
+                    ui.label(t!("速度"));
+                });
+                tui.ui(|ui| {
+                    if ui
+                        .add_sized([28.0, 28.0], elegance::Button::new("⏭"))
+                        .clicked()
+                    {
+                        self.apply_frame(self.current_frame + 1, state);
+                    }
+                });
+                tui.ui(|ui| {
+                    let icon = if self.is_playing { "⏸" } else { "▶" };
+                    if ui
+                        .add_sized([28.0, 28.0], elegance::Button::new(icon))
+                        .clicked()
+                    {
+                        self.is_playing = !self.is_playing;
+                        let mixer = app_state::active_audio_mixer(state);
+                        if self.is_playing {
+                            self.playback_anchor = Some((Instant::now(), self.current_frame));
+                            mixer.lock().unwrap().play();
+                        } else {
+                            self.playback_anchor = None;
+                            mixer.lock().unwrap().pause();
+                        }
+                    }
+                });
+                tui.ui(|ui| {
+                    if ui
+                        .add_sized([28.0, 28.0], elegance::Button::new("⏮"))
+                        .clicked()
+                    {
+                        self.apply_frame(self.current_frame - 1, state);
+                    }
+                });
+                tui.ui(|ui| {
+                    let digits = self.total_frames.max(1).to_string().len();
+                    ui.monospace(format!(
+                        "{:0width$} / {}",
+                        self.current_frame,
+                        self.total_frames,
+                        width = digits
+                    ));
+                });
+            });
     }
 
     fn tab_bar(
@@ -554,6 +579,9 @@ impl PreviewPanel {
                     let active = state.lock().unwrap().active;
                     dialogs.borrow_mut().request_close_session(state, active);
                 }
+                CommandId::ShowPreview => self.focus_request = Some(WorkspacePane::Preview),
+                CommandId::ShowTimeline => self.focus_request = Some(WorkspacePane::Timeline),
+                CommandId::ShowProperties => self.focus_request = Some(WorkspacePane::Properties),
                 _ => {}
             }
         }
@@ -653,29 +681,70 @@ impl PreviewPanel {
         self.session_generation += 1;
     }
 
-    pub fn show(
+    /// ウィンドウ上部に置くメニューバー。全体ショートカットもここで処理する。
+    pub fn show_menu_bar(
         &mut self,
         ui: &mut egui::Ui,
-        egui_renderer: &mut EguiRenderer,
         state: &SharedAppState,
         dialogs: &Rc<RefCell<DialogSet>>,
     ) {
         self.handle_project_shortcuts(ui, state, dialogs);
         self.menu_bar(ui, state);
-        self.tab_bar(ui, state, dialogs);
-        self.confirm_close_dialog(&ui.ctx().clone(), state, dialogs);
+    }
 
+    /// ウィンドウ上部に置くプロジェクトタブ。
+    pub fn show_tab_bar(
+        &mut self,
+        ui: &mut egui::Ui,
+        state: &SharedAppState,
+        dialogs: &Rc<RefCell<DialogSet>>,
+    ) {
+        self.tab_bar(ui, state, dialogs);
+    }
+
+    /// 未保存確認モーダル。
+    pub fn show_confirm_close(
+        &mut self,
+        ctx: &egui::Context,
+        state: &SharedAppState,
+        dialogs: &Rc<RefCell<DialogSet>>,
+    ) {
+        self.confirm_close_dialog(ctx, state, dialogs);
+    }
+
+    /// 再生 tick。ペインの表示状態に依存せず毎フレーム呼ぶ。
+    pub fn tick(&mut self, ctx: &egui::Context, state: &SharedAppState) {
+        if self.is_playing {
+            self.advance_playback(state);
+            ctx.request_repaint_after(std::time::Duration::from_millis(PLAYBACK_TICK_MS));
+        }
+    }
+
+    /// プレビューペインの本体（映像＋再生バー）。
+    pub fn show_content(
+        &mut self,
+        ui: &mut egui::Ui,
+        egui_renderer: &mut EguiRenderer,
+        state: &SharedAppState,
+    ) {
         self.render_frame(egui_renderer, state);
 
-        egui::Panel::bottom("preview_playback_bar")
-            .frame(egui::Frame::default().inner_margin(egui::Margin::symmetric(6, 4)))
-            .show(ui, |ui| {
-                self.playback_controls(ui, state);
-            });
+        if ui.available_height() > 76.0 {
+            egui::Panel::bottom("preview_playback_bar")
+                .frame(egui::Frame::default().inner_margin(egui::Margin::symmetric(6, 4)))
+                .show(ui, |ui| {
+                    self.playback_toolbar(ui, state);
+                    self.playback_controls(ui, state);
+                });
+        }
 
         egui::CentralPanel::default()
             .frame(egui::Frame::default())
             .show(ui, |ui| {
+                let available = ui.available_size();
+                if available.x <= 1.0 || available.y <= 1.0 {
+                    return;
+                }
                 if let Some(texture_id) = self.texture_id {
                     let (w, h) = self.texture_dims;
                     let aspect = w as f32 / h.max(1) as f32;
@@ -744,12 +813,6 @@ impl PreviewPanel {
                 &mut self.interaction,
                 state,
             );
-        }
-
-        if self.is_playing {
-            self.advance_playback(state);
-            ui.ctx()
-                .request_repaint_after(std::time::Duration::from_millis(PLAYBACK_TICK_MS));
         }
     }
 }

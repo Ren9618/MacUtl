@@ -2,8 +2,8 @@
 
 - **Upstream**: NeoUtl v0.8.11, commit `0ead39350db55996810de53da79d02fbc98355f5`
   (<https://codeberg.org/taisho-guy/NeoUtl>)
-- **Fork**: MacUtl 0.8.11 (macOS fork, first release)
-- **Change date**: 2026-11-12
+- **Fork**: MacUtl 0.8.11 (macOS fork; Phase 7)
+- **Change date**: 2026-11-12 (initial release), 2026-11-13 (Phase 7)
 - **License**: GNU Affero General Public License, version 3 or later
   (see `LICENSE`; upstream copyright notices are retained)
 
@@ -88,7 +88,27 @@ unchanged for compatibility and upstream tracking.
 - The upstream README is preserved as `README.upstream.md`; `README.md` is the
   MacUtl fork README.
 
-## 4. License and notices
+## 4. One-screen workspace (Phase 7)
+
+- Added `egui_tiles` 0.17.1 and `src/app/workspace.rs`.
+- Preview, properties and timeline now share one window; the separate
+  timeline/properties viewports were removed.
+- Added YMM4-style and classic presets, splitter resizing, pane-header drag
+  swapping, header context-menu swapping, and layout reset.
+- The layout is persisted as JSON outside the `.npb` project and
+  `SystemSettingsResource`, at
+  `~/Library/Application Support/MacUtl/settings/workspace-layout.json`
+  (development builds: `<executable dir>/settings/workspace-layout.json`).
+- Invalid or corrupt layout JSON falls back to the YMM4-style preset.
+- Added a minimum window size of 800×600 and small-panel guards in the
+  timeline and properties panels.
+- Narrow effect lists now omit the status badge or truncate long effect
+  names so the label and badge do not overlap.
+- Moved the playback tick from the preview `show` call to the app level.
+- Playback controls moved below the preview.
+- The existing dialogs remain separate windows in v1.
+
+## 5. License and notices
 
 - Added `LICENSE_AUDIT.md` (license audit and publication gate).
 - Added `THIRD_PARTY_NOTICES.md` (508 Rust license entries plus native
@@ -101,7 +121,7 @@ unchanged for compatibility and upstream tracking.
   reproducible.
 - The upstream `LICENSE` and copyright notices are retained unchanged.
 
-## 5. Verification records
+## 6. Verification records
 
 The following reports are part of the repository and document the work:
 
@@ -111,11 +131,12 @@ The following reports are part of the repository and document the work:
 - `MACOS_PHASE4_REPORT.md`
 - `MACOS_PHASE45_REPORT.md`
 - `MACOS_PHASE5_REPORT.md`
+- `MACOS_PHASE7_REPORT.md`
 
 Key verification results are summarized in `MACOS_PHASE5_REPORT.md`
 (regression checks, release build, downloaded-artifact verification).
 
-## 6. Build-time generated file
+## 7. Build-time generated file
 
 `cargo xtask build` regenerates `i18n/ja.yml` from Japanese string literals in
 the source tree (existing upstream behavior). The generated file belongs to
@@ -124,7 +145,7 @@ superproject. A clean build reproduces it automatically. For a checkout that
 must exactly match the release build without running xtask, apply
 `patches/i18n-macutl-ja.patch` to the `i18n` submodule first.
 
-## 7. Contact
+## 8. Contact
 
 - Issues: <https://github.com/Ren9618/MacUtl/issues>
 - Upstream: <https://codeberg.org/taisho-guy/NeoUtl>

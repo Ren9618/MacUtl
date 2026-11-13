@@ -2,8 +2,10 @@ pub mod shortcuts;
 pub mod state;
 pub mod theme;
 pub mod update;
+pub mod workspace;
 
 use crate::app::state::SharedAppState;
+use crate::app::workspace::WorkspaceState;
 use crate::infra::gpu_shared::SharedGpu;
 use crate::project::ProjectMeta;
 use crate::ui::dialogs::DialogSet;
@@ -167,6 +169,7 @@ pub struct NeoUtlApp {
     init_done: bool,
     pending_project: Option<ProjectMeta>,
     stage: Stage,
+    workspace: WorkspaceState,
 }
 
 impl NeoUtlApp {
@@ -182,6 +185,7 @@ impl NeoUtlApp {
             init_done: false,
             pending_project: None,
             stage: Stage::Launcher,
+            workspace: WorkspaceState::load(),
         }
     }
 
@@ -246,39 +250,50 @@ impl eframe::App for NeoUtlApp {
         ctx.send_viewport_cmd(egui::ViewportCommand::Title(
             crate::app::state::active_project_window_title(&p.state),
         ));
+        p.panel.borrow_mut().tick(&ctx, &p.state);
+        p.panel
+            .borrow_mut()
+            .show_confirm_close(&ctx, &p.state, &p.dialogs);
+
+        egui::Panel::top("app_menu_bar")
+            .frame(egui::Frame::default().inner_margin(egui::Margin::symmetric(6, 2)))
+            .show(ui, |ui| {
+                p.panel.borrow_mut().show_menu_bar(ui, &p.state, &p.dialogs);
+            });
+        egui::Panel::top("app_project_tabs")
+            .frame(egui::Frame::default().inner_margin(egui::Margin::symmetric(6, 2)))
+            .show(ui, |ui| {
+                p.panel.borrow_mut().show_tab_bar(ui, &p.state, &p.dialogs);
+            });
+
+        let (focus, preset) = {
+            let mut panel = p.panel.borrow_mut();
+            (panel.focus_request.take(), panel.preset_request.take())
+        };
+        if let Some(pane) = focus {
+            self.workspace.focus(pane);
+        }
+        if let Some(preset) = preset {
+            self.workspace.apply_preset(preset);
+        }
+
         egui::CentralPanel::default().show(ui, |ui| {
             let mut renderer = egui_renderer.write();
-            p.panel
-                .borrow_mut()
-                .show(ui, &mut renderer, &p.state, &p.dialogs);
+            self.workspace.ui(
+                ui,
+                &p.panel,
+                &p.timeline,
+                &p.properties,
+                &p.state,
+                &p.dialogs,
+                &mut renderer,
+            );
         });
+        self.workspace.flush(false);
+
         p.dialogs
             .borrow_mut()
             .sync_preview_requests(&p.state, &p.panel);
-
-        ctx.show_viewport_immediate(
-            egui::ViewportId::from_hash_of("timeline"),
-            egui::ViewportBuilder::default().with_title(t!("拡張編集")),
-            |ui, _class| {
-                let ctx = ui.ctx().clone();
-                egui::CentralPanel::default().show(ui, |ui| {
-                    p.timeline
-                        .borrow_mut()
-                        .show(&ctx, ui, &p.state, &p.panel, &(), &p.dialogs);
-                });
-            },
-        );
-
-        ctx.show_viewport_immediate(
-            egui::ViewportId::from_hash_of("properties"),
-            egui::ViewportBuilder::default().with_title(t!("プロパティ")),
-            |ui, _class| {
-                let ctx = ui.ctx().clone();
-                egui::CentralPanel::default().show(ui, |ui| {
-                    p.properties.borrow_mut().show(&ctx, ui, &p.state, &p.panel);
-                });
-            },
-        );
 
         for id in DIALOG_WINDOW_IDS {
             if !dialog_open_state(p, id) {
@@ -324,6 +339,10 @@ impl eframe::App for NeoUtlApp {
             }
         }
     }
+
+    fn on_exit(&mut self) {
+        self.workspace.flush(true);
+    }
 }
 
 pub fn run(
@@ -332,7 +351,8 @@ pub fn run(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut options = eframe::NativeOptions::default();
     options.viewport = egui::ViewportBuilder::default()
-        .with_inner_size([LAUNCHER_WINDOW_SIZE.0, LAUNCHER_WINDOW_SIZE.1]);
+        .with_inner_size([LAUNCHER_WINDOW_SIZE.0, LAUNCHER_WINDOW_SIZE.1])
+        .with_min_inner_size([800.0, 600.0]);
     options.wgpu_options.wgpu_setup =
         egui_wgpu::WgpuSetup::Existing(egui_wgpu::WgpuSetupExisting {
             instance: gpu.instance.clone(),

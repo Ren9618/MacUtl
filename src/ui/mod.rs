@@ -36,7 +36,6 @@ pub fn start_project(meta: project::ProjectMeta, gpu: Rc<SharedGpu>, slot: Previ
         crate::app::state::settings_world(&state).clone(),
     )));
     let timeline = Rc::new(RefCell::new(TimelineWindow::new()));
-    timeline.borrow_mut().open = true;
     let properties = Rc::new(RefCell::new(PropertiesPanel::new()));
     crate::app::set_preview(&slot, panel, dialogs, timeline, properties, state);
 }
