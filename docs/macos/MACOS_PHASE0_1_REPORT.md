@@ -400,7 +400,7 @@ $ git diff --stat
   2. 初期画面（プロジェクトランチャー）の「新規プロジェクト」セクション（映像: `30 fps`, `1920 px`, `1080 px` / 音声: `2 ch`, `48000 Hz` / `名前` 入力フィールド / 青色の `作成して開く` ボタン）および「既存プロジェクト」セクション（`検索` フィールド / `並べ替え: 名前 ↑` / `選択モードに入る` / `コピー` / `削除` / `プロジェクトがありません`）が崩れ・重なり・描画ノイズ一切なく表示されている。
   3. 日本語フォントがシステムフォント（CoreText）経由で鮮明にレンダリングされており、文字化け・文字切れは皆無である。
 
-![NeoUtl macOS Phase 1 Launch Screenshot](target/macos_smoke_test/neoutl_macos_phase1.png)
+![NeoUtl macOS Phase 1 Launch Screenshot](../../target/macos_smoke_test/neoutl_macos_phase1.png)
 
 ---
 

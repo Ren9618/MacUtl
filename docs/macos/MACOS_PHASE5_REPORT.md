@@ -125,7 +125,7 @@ Homebrew FFmpeg 9.0.2 の `ffmpeg -buildconf` で実測した configure フラ�
 | `LICENSE` がリポジトリ直下にある | 済 | `LICENSE`（AGPL-3.0） |
 | `LICENSE` が `.app/Contents/Resources` に入る | 済 | パッケージスクリプトで同梱 |
 | 変更点と変更日を示す文書 | 済 | `MACOS_CHANGES.md`（2026-11-12） |
-| 変更の証跡 | 済 | `MACOS_PHASE0_1_REPORT.md` 〜 本報告書 |
+| 変更の証跡 | 済 | `docs/macos/MACOS_PHASE0_1_REPORT.md` 〜 本報告書 |
 | 第三者ライセンス一覧 | 済 | `THIRD_PARTY_NOTICES.md`（Rust 508 エントリ + ネイティブ 12 種） |
 | 第三者ライセンス本文 | 済 | `third_party/licenses/`、`.app` 内にも同梱 |
 | UI 上のライセンス表示 | 代替済 | About 画面は無い。README とアプリ内 `LICENSE` で明記 |
@@ -414,7 +414,7 @@ TeamIdentifier=not set
 | `LICENSE_AUDIT.md` | ライセンス本調査と公開ゲート |
 | `THIRD_PARTY_NOTICES.md` | Rust 508 エントリ + ネイティブライブラリの通知 |
 | `MACOS_CHANGES.md` | AGPL 変更通知とリネーム一覧 |
-| `RELEASE_NOTES_v0.8.11-mac.1.md` | 公開したリリース本文 |
+| `docs/macos/RELEASE_NOTES_v0.8.11-mac.1.md` | 公開したリリース本文 |
 | `scripts/package_macos.py` | `.app` / DMG / ZIP の生成、署名、同梱 |
 | `patches/i18n-macutl-ja.patch` | i18n サブモジュールの再現用差分 |
 | `docs/screenshots/macutl-main.png` | README 用スクリーンショット |

@@ -264,7 +264,7 @@ Phase 7 の検証中に「書き出しダイアログがフォーカスを失う
 - ベース: `v0.8.11-mac.1`（`main` は `8e97a0f4`）
 - パッケージコマンド: `cargo xtask package --release`
 - 署名: `codesign --sign -`（ad-hoc、`CFBundleVersion=1185`）
-- リリースノート: `RELEASE_NOTES_v0.8.11-mac.2.md`
+- リリースノート: `docs/macos/RELEASE_NOTES_v0.8.11-mac.2.md`
 - 公開日時: 2026-11-13 18:42 JST（`2026-11-13T09:42:49Z`）
 
 | 成果物 | サイズ | SHA-256 |

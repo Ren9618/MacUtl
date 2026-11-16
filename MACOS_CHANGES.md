@@ -125,15 +125,15 @@ unchanged for compatibility and upstream tracking.
 
 The following reports are part of the repository and document the work:
 
-- `MACOS_PHASE0_1_REPORT.md`
-- `MACOS_PHASE2_REPORT.md`
-- `MACOS_PHASE3_REPORT.md`
-- `MACOS_PHASE4_REPORT.md`
-- `MACOS_PHASE45_REPORT.md`
-- `MACOS_PHASE5_REPORT.md`
-- `MACOS_PHASE7_REPORT.md`
+- `docs/macos/MACOS_PHASE0_1_REPORT.md`
+- `docs/macos/MACOS_PHASE2_REPORT.md`
+- `docs/macos/MACOS_PHASE3_REPORT.md`
+- `docs/macos/MACOS_PHASE4_REPORT.md`
+- `docs/macos/MACOS_PHASE45_REPORT.md`
+- `docs/macos/MACOS_PHASE5_REPORT.md`
+- `docs/macos/MACOS_PHASE7_REPORT.md`
 
-Key verification results are summarized in `MACOS_PHASE5_REPORT.md`
+Key verification results are summarized in `docs/macos/MACOS_PHASE5_REPORT.md`
 (regression checks, release build, downloaded-artifact verification).
 
 ## 7. Build-time generated file

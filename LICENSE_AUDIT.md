@@ -191,7 +191,7 @@ assets/LICENSE:   Creative Commons Legal Code / CC0 1.0 Universal
 | `LICENSE` 本文がリポジトリ直下にある | **済** | `LICENSE`（AGPL-3.0、35 KB） |
 | `LICENSE` が .app の `Contents/Resources` に入る | **済** | パッケージスクリプトで同梱（Phase 5 で実装） |
 | 変更点と変更日を示す文書 | **済** | `MACOS_CHANGES.md`（2026-11-12、Phase 0〜4.5） |
-| 変更の証跡（Phase 報告書） | **済** | `MACOS_PHASE0_1_REPORT.md` 〜 `MACOS_PHASE5_REPORT.md` |
+| 変更の証跡（Phase 報告書） | **済** | `docs/macos/MACOS_PHASE0_1_REPORT.md` 〜 `docs/macos/MACOS_PHASE5_REPORT.md` |
 | 第三者ライセンス一覧 | **済** | `THIRD_PARTY_NOTICES.md`（Rust 508 エントリ + ネイティブ 12 種） |
 | 第三者ライセンス本文 | **済** | `third_party/licenses/`、.app 内にも同梱 |
 | UI 上のライセンス表示 | **代替済** | About 画面は無い。README とアプリ内 LICENSE で明記 |
