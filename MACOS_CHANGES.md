@@ -2,8 +2,9 @@
 
 - **Upstream**: NeoUtl v0.8.11, commit `0ead39350db55996810de53da79d02fbc98355f5`
   (<https://codeberg.org/taisho-guy/NeoUtl>)
-- **Fork**: MacUtl 0.8.11 (macOS fork; Phase 7)
-- **Change date**: 2026-11-12 (initial release), 2026-11-13 (Phase 7)
+- **Fork**: MacUtl 0.8.11 (macOS fork; Phase 8)
+- **Change date**: 2026-11-12 (initial release), 2026-11-13 (Phase 7),
+  2026-11-17 (Phase 8)
 - **License**: GNU Affero General Public License, version 3 or later
   (see `LICENSE`; upstream copyright notices are retained)
 
@@ -108,7 +109,32 @@ unchanged for compatibility and upstream tracking.
 - Playback controls moved below the preview.
 - The existing dialogs remain separate windows in v1.
 
-## 5. License and notices
+## 5. VOICEVOX integration and audio export (Phase 8)
+
+- Added a VOICEVOX client (`src/voicevox/`) and a "VOICEVOX セリフ入力"
+  dialog (`src/ui/voice_dialog.rs`). The client connects to a local
+  VOICEVOX engine over its HTTP API (default
+  `http://127.0.0.1:50021`), lists speakers from the engine, and
+  synthesizes one line per utterance entered in the dialog. The generated
+  WAV files are stored under the project's `voicevox/` folder and an audio
+  object plus a subtitle text object are placed on the timeline
+  automatically, starting at the playhead. VOICEVOX itself is not bundled;
+  users install and run it separately.
+- Speech parameters (speed, pitch, intonation, volume), subtitle on/off and
+  font size, and the audio / subtitle layer assignments are configurable in
+  the dialog and persist in `voicevox.json` next to the other settings.
+  Generation shows progress and can be cancelled.
+- Added audio export (`src/audio/export.rs`): exported MP4 files now
+  include an AAC audio stream mixed from the timeline audio objects
+  (`src/audio/mixer.rs`, `crates/media/ffmpeg/src/encoder.rs` and `lib.rs`).
+  Projects without active audio still export video-only.
+- Fixed wiring by re-exporting the public voice API
+  (`VoiceClip`, `VoiceGenerationRequest`, `split_utterances`,
+  `spawn_speakers`, `spawn_generation`) from `src/voicevox/mod.rs`.
+- The README documents the required VOICEVOX / voice-library credit notice
+  for videos that contain synthesized speech.
+
+## 6. License and notices
 
 - Added `LICENSE_AUDIT.md` (license audit and publication gate).
 - Added `THIRD_PARTY_NOTICES.md` (508 Rust license entries plus native
@@ -121,7 +147,7 @@ unchanged for compatibility and upstream tracking.
   reproducible.
 - The upstream `LICENSE` and copyright notices are retained unchanged.
 
-## 6. Verification records
+## 7. Verification records
 
 The following reports are part of the repository and document the work:
 
@@ -132,11 +158,12 @@ The following reports are part of the repository and document the work:
 - `docs/macos/MACOS_PHASE45_REPORT.md`
 - `docs/macos/MACOS_PHASE5_REPORT.md`
 - `docs/macos/MACOS_PHASE7_REPORT.md`
+- `docs/macos/MACOS_PHASE8_REPORT.md`
 
 Key verification results are summarized in `docs/macos/MACOS_PHASE5_REPORT.md`
 (regression checks, release build, downloaded-artifact verification).
 
-## 7. Build-time generated file
+## 8. Build-time generated file
 
 `cargo xtask build` regenerates `i18n/ja.yml` from Japanese string literals in
 the source tree (existing upstream behavior). The generated file belongs to
@@ -145,7 +172,7 @@ superproject. A clean build reproduces it automatically. For a checkout that
 must exactly match the release build without running xtask, apply
 `patches/i18n-macutl-ja.patch` to the `i18n` submodule first.
 
-## 8. Contact
+## 9. Contact
 
 - Issues: <https://github.com/Ren9618/MacUtl/issues>
 - Upstream: <https://codeberg.org/taisho-guy/NeoUtl>

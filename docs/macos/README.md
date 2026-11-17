@@ -13,6 +13,7 @@
 | [MACOS_PHASE45_REPORT.md](MACOS_PHASE45_REPORT.md) | 2026-11-12 | 動画＋画像オブジェクトの書き出し停止の修正 |
 | [MACOS_PHASE5_REPORT.md](MACOS_PHASE5_REPORT.md) | 2026-11-12 | MacUtl 公開・初回リリース（v0.8.11-mac.1） |
 | [MACOS_PHASE7_REPORT.md](MACOS_PHASE7_REPORT.md) | 2026-11-13 | 一画面ワークスペース（YMM4 風レイアウト）の実装（v0.8.11-mac.2） |
+| [MACOS_PHASE8_REPORT.md](MACOS_PHASE8_REPORT.md) | 2026-11-17 | VOICEVOX 連携（声入れ）と音声付き書き出しの実装・実機検証 |
 
 ## リリースノート
 
@@ -20,5 +21,6 @@
 |---|---|
 | [RELEASE_NOTES_v0.8.11-mac.1.md](RELEASE_NOTES_v0.8.11-mac.1.md) | v0.8.11-mac.1（2026-11-12 公開）のリリース本文 |
 | [RELEASE_NOTES_v0.8.11-mac.2.md](RELEASE_NOTES_v0.8.11-mac.2.md) | v0.8.11-mac.2（2026-11-13 公開）のリリース本文 |
+| [RELEASE_NOTES_v0.8.11-mac.3.md](RELEASE_NOTES_v0.8.11-mac.3.md) | v0.8.11-mac.3（2026-11-17 公開）のリリース本文 |
 
 上流からの変更点と変更日の一覧はルートの [MACOS_CHANGES.md](../../MACOS_CHANGES.md) を参照してください。
