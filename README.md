@@ -18,6 +18,7 @@
 - [既知の制限](#既知の制限)
 - [プライバシ](#プライバシ)
 - [ライセンス](#ライセンス)
+- [作者の他のソフト](#作者の他のソフト)
 - [サポート](#サポート)
 - [ソースからビルド](#ソースからビルド)
 - [謝辞](#謝辞)
@@ -138,6 +139,10 @@ MacUtl は **GNU Affero General Public License version 3 or later（AGPL-3.0-or-
 - NeoUtl 公式サイト: <https://neoutl.taisho-guy.org>
 - 上流 README: [README.upstream.md](README.upstream.md)
 - 上流の履歴は書き換えず、`0ead393` の上にフォーク側の変更を積んでいます。
+
+## 作者の他のソフト
+
+このフォークの作者（レイノワークス）は、Windows 向けの無料解凍ソフト **Hodozip** や、ディスク使用量ビューアー **Yohaku** も作っています： https://ren9618.github.io/
 
 ## サポート
 
