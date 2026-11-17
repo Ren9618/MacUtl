@@ -50,6 +50,7 @@ pub struct PreviewPanel {
     pub open_project_settings: bool,
     pub open_keybindings: bool,
     pub open_export: bool,
+    pub open_voicevox: bool,
     pub open_camera_view: bool,
     /// 「表示」メニューやショートカットからのペインフォーカス要求。
     pub focus_request: Option<WorkspacePane>,
@@ -78,6 +79,7 @@ impl PreviewPanel {
             open_project_settings: false,
             open_keybindings: false,
             open_export: false,
+            open_voicevox: false,
             open_camera_view: false,
             focus_request: None,
             preset_request: None,
@@ -240,6 +242,7 @@ impl PreviewPanel {
         let mut open_system_settings = false;
         let mut open_project_settings = false;
         let mut open_keybindings = false;
+        let mut open_voicevox = false;
         let mut focus_request = None;
         let mut preset_request = None;
         let row_width = ui.available_width();
@@ -322,6 +325,10 @@ impl PreviewPanel {
                             }
                         });
                         bar.menu(t!("ツール"), |ui| {
+                            if ui.add(MenuItem::new(t!("VOICEVOX セリフ入力"))).clicked() {
+                                open_voicevox = true;
+                            }
+                            ui.separator();
                             let tool_items = {
                                 let mgr = crate::extensions::global_extension_manager()
                                     .lock()
@@ -406,6 +413,9 @@ impl PreviewPanel {
         }
         if open_keybindings {
             self.open_keybindings = true;
+        }
+        if open_voicevox {
+            self.open_voicevox = true;
         }
         if let Some(pane) = focus_request {
             self.focus_request = Some(pane);

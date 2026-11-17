@@ -20,6 +20,7 @@ mod objects;
 mod project;
 mod renderer;
 mod ui;
+mod voicevox;
 fn configure_decode_runtime() {
     let system_settings = ui::system_settings::load_from_disk().unwrap_or_default();
     neoutl_media_runtime::runtime::set_worker_threads(system_settings.worker_threads);

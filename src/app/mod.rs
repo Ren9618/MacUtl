@@ -53,6 +53,7 @@ const DIALOG_WINDOW_IDS: &[&str] = &[
     "scene_settings",
     "keybindings",
     "export",
+    "voicevox",
     "effect_add",
     "easing_editor",
 ];
@@ -66,6 +67,7 @@ fn dialog_title(id: &str) -> String {
         "scene_settings" => t!("シーン設定"),
         "keybindings" => t!("ショートカット設定"),
         "export" => t!("メディアの書き出し"),
+        "voicevox" => t!("VOICEVOX セリフ入力"),
         "effect_add" => t!("エフェクト追加"),
         "easing_editor" => t!("イージングエディタ"),
         _ => id.to_owned(),
@@ -79,6 +81,7 @@ fn dialog_open_state(p: &RegisteredPreview, id: &str) -> bool {
         "scene_settings" => p.dialogs.borrow().scene_settings.open,
         "keybindings" => p.dialogs.borrow().keybindings.open,
         "export" => p.dialogs.borrow().export_dialog.open,
+        "voicevox" => p.dialogs.borrow().voice_dialog.open,
         "effect_add" => p.properties.borrow().effect_add.open,
         "easing_editor" => crate::ui::properties::easing_editor::is_open(),
         _ => false,
@@ -92,6 +95,13 @@ fn set_dialog_open(p: &RegisteredPreview, id: &str, open: bool) {
         "scene_settings" => p.dialogs.borrow_mut().scene_settings.open = open,
         "keybindings" => p.dialogs.borrow_mut().keybindings.set_open(open),
         "export" => p.dialogs.borrow_mut().export_dialog.open = open,
+        "voicevox" => {
+            let mut dialogs = p.dialogs.borrow_mut();
+            if !open {
+                dialogs.voice_dialog.save_settings();
+            }
+            dialogs.voice_dialog.open = open;
+        }
         "effect_add" => p.properties.borrow_mut().effect_add.open = open,
         "easing_editor" => {
             if !open {
@@ -128,6 +138,9 @@ fn show_dialog_contents(ctx: &egui::Context, ui: &mut egui::Ui, p: &RegisteredPr
         }
         "export" => {
             p.dialogs.borrow_mut().export_dialog.show(ctx, ui, &p.state);
+        }
+        "voicevox" => {
+            p.dialogs.borrow_mut().voice_dialog.show(ctx, ui, &p.state);
         }
         "effect_add" => {
             p.properties.borrow_mut().show_effect_add(ui, &p.state);

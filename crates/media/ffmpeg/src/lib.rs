@@ -12,7 +12,10 @@ pub use decoder::{
     set_force_sw_decode, set_hw_decode_extra_frames, set_hw_device_type_priority,
     set_hw_device_type_priority_for_codec, set_shared_wgpu_device, shared_wgpu_submit_lock,
 };
-pub use encoder::{EncoderBackend, EncoderCodec, EncoderConfig, VideoEncoder, is_hw_encoder_name};
+pub use encoder::{
+    AudioExportConfig, EncoderBackend, EncoderCodec, EncoderConfig, VideoEncoder,
+    is_aac_sample_rate, is_hw_encoder_name,
+};
 pub use frame::{GpuFrame, VideoFrame, VideoFrameStore};
 pub use index::{FrameIndex, FrameIndexEntry, build_index};
 pub use source::native_vtable;

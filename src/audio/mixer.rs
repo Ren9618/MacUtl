@@ -405,7 +405,7 @@ impl AudioMixer {
     }
 }
 
-fn process_audio_effects(
+pub(crate) fn process_audio_effects(
     effects: &[(String, HashMap<String, crate::ecs::types::Value>)],
     timeline_frame: i64,
     fps: f64,
@@ -489,7 +489,13 @@ fn plugin_spec_for(path: &Path, plugin_id: &str) -> Option<String> {
     }
 }
 
-fn lerp_sample(samples: &[f32], frame_idx: usize, channels: usize, ch: usize, frac: f32) -> f32 {
+pub(crate) fn lerp_sample(
+    samples: &[f32],
+    frame_idx: usize,
+    channels: usize,
+    ch: usize,
+    frac: f32,
+) -> f32 {
     let a = samples
         .get(frame_idx * channels + ch)
         .copied()

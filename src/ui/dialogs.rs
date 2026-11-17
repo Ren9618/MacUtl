@@ -6,6 +6,7 @@ use crate::ui::preview::PreviewPanel;
 use crate::ui::project_settings::ProjectSettingsWindow;
 use crate::ui::scene_settings::SceneSettingsWindow;
 use crate::ui::system_settings::SystemSettingsWindow;
+use crate::ui::voice_dialog::VoiceDialog;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -16,6 +17,7 @@ pub struct DialogSet {
     pub scene_settings: SceneSettingsWindow,
     pub keybindings: KeybindingsWindow,
     pub export_dialog: ExportDialog,
+    pub voice_dialog: VoiceDialog,
     pub confirm_close_session: Option<usize>,
 }
 
@@ -27,6 +29,7 @@ impl DialogSet {
             scene_settings: SceneSettingsWindow::new(),
             keybindings: KeybindingsWindow::new(),
             export_dialog: ExportDialog::new(),
+            voice_dialog: VoiceDialog::new(),
             confirm_close_session: None,
         }
     }
@@ -71,6 +74,9 @@ impl DialogSet {
         }
         if std::mem::take(&mut preview.open_export) {
             self.export_dialog.open(state);
+        }
+        if std::mem::take(&mut preview.open_voicevox) {
+            self.voice_dialog.request_open();
         }
     }
 }

@@ -253,6 +253,77 @@ impl Default for RenderQueue {
     }
 }
 
+/// 書き出し区間に音声オブジェクトがあれば、AAC トラックの設定を返す。
+/// プロジェクトの標本レートが AAC 非対応のときは 48000 Hz に置き換える。
+fn audio_export_config(
+    world_holder: &Arc<Mutex<crate::ecs::EcsWorld>>,
+    start_frame: i32,
+    end_frame: i32,
+) -> Option<neo_media_ffmpeg::AudioExportConfig> {
+    let world = world_holder.lock().unwrap();
+    if !crate::audio::export::has_active_audio(&world, start_frame, end_frame) {
+        return None;
+    }
+    let project = world.get_project();
+    let sample_rate = if project.audio_sample_rate > 0
+        && neo_media_ffmpeg::is_aac_sample_rate(project.audio_sample_rate)
+    {
+        project.audio_sample_rate
+    } else {
+        eprintln!(
+            "[NeoUtl][export] プロジェクトの標本レート {} Hz は AAC 非対応のため 48000 Hz で書き出します",
+            project.audio_sample_rate
+        );
+        48_000
+    };
+    Some(neo_media_ffmpeg::AudioExportConfig {
+        sample_rate,
+        channels: 2,
+        average_bitrate: 192_000,
+    })
+}
+
+/// タイムライン区間の音声をチャンクごとに混合してエンコーダへ積む。
+fn mix_timeline_audio(
+    world_holder: &Arc<Mutex<crate::ecs::EcsWorld>>,
+    encoder: &mut neo_media_ffmpeg::VideoEncoder,
+    job: &ExportJob,
+    config: neo_media_ffmpeg::AudioExportConfig,
+    fps: u32,
+) -> Result<(), String> {
+    let canceled = || {
+        job.cancel
+            .as_ref()
+            .is_some_and(|c| c.load(std::sync::atomic::Ordering::Relaxed))
+    };
+    let mut mixer = crate::audio::export::OfflineMixer::new();
+    const CHUNK_FRAMES: i32 = 64;
+    let mut first = job.start_frame;
+    while first <= job.end_frame {
+        if canceled() {
+            return Err("キャンセルされました".to_owned());
+        }
+        let last = first
+            .saturating_add(CHUNK_FRAMES)
+            .saturating_sub(1)
+            .min(job.end_frame);
+        let chunk = {
+            let world = world_holder.lock().unwrap();
+            mixer.mix_frames(
+                &world,
+                first,
+                last,
+                config.sample_rate,
+                config.channels,
+                fps,
+            )
+        };
+        encoder.push_audio_interleaved(&chunk)?;
+        first = last.saturating_add(1);
+    }
+    Ok(())
+}
+
 pub fn run(state: &SharedAppState, mut job: ExportJob) -> Result<(), String> {
     if job.end_frame < job.start_frame {
         return Err(format!(
@@ -283,6 +354,8 @@ pub fn run(state: &SharedAppState, mut job: ExportJob) -> Result<(), String> {
         (project.width, project.height, project.fps.max(1))
     };
 
+    let audio_config = audio_export_config(&world_holder, job.start_frame, job.end_frame);
+
     let encoder_codec = match job.codec {
         ExportCodec::H264 => neo_media_ffmpeg::EncoderCodec::H264,
         ExportCodec::H265 => neo_media_ffmpeg::EncoderCodec::H265,
@@ -302,6 +375,7 @@ pub fn run(state: &SharedAppState, mut job: ExportJob) -> Result<(), String> {
             max_bitrate: job.max_bitrate,
             codec: encoder_codec,
             backend: encoder_backend,
+            audio: audio_config,
         },
     )?;
     eprintln!(
@@ -309,6 +383,13 @@ pub fn run(state: &SharedAppState, mut job: ExportJob) -> Result<(), String> {
         encoder.encoder_name,
         neo_media_ffmpeg::is_hw_encoder_name(&encoder.encoder_name)
     );
+    if let Some(audio_config) = &audio_config {
+        mix_timeline_audio(&world_holder, &mut encoder, &job, *audio_config, fps)?;
+        eprintln!(
+            "[NeoUtl][export] 音声トラック混合完了 ({} Hz / {} ch)",
+            audio_config.sample_rate, audio_config.channels
+        );
+    }
 
     for frame in job.start_frame..=job.end_frame {
         if is_canceled(&job) {

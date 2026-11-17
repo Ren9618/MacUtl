@@ -13,6 +13,7 @@ pub mod system_settings;
 pub mod timeline;
 pub mod types;
 pub mod ui_ext;
+pub mod voice_dialog;
 
 use crate::app::PreviewSlot;
 use crate::app::state::{AppState, ProjectSession};
